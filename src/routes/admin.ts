@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
     getDashboardStats, getExperts, updateAExperts, createExperts, deleteAExperts,updateProfile,
-     getAllworkshop, updateAworkshop, getAworkshop, updateAPassword
+     getAllworkshop, updateAworkshop, getAworkshop, updateAPassword, getAllprojects, getAproject, updateAproject
 } from "../controllers/admin/admin";
 import { upload } from "../config/multer";
 import { checkMulter } from "../lib/errors/error-response-handler"
@@ -19,5 +19,7 @@ router.route("/workshops/:id").put(checkAuth, updateAworkshop).get(checkAuth, ge
 router.route("/update-profile").patch(checkAuth, updateProfile)
 router.route("/updatedetails").put(checkAuth, updateProfile)
 router.route("/change-password").post(checkAuth, updateAPassword)
+router.route("/projects").get(getAllprojects)
+router.route("/projects/:id").put(checkAuth, updateAproject).get(checkAuth, getAproject)
 
 export { router }

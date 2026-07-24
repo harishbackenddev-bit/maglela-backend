@@ -4,7 +4,8 @@ import {
     loginService, newPassswordAfterOTPVerifiedService, forgotPasswordService, getAllUsersService,
     getAUserService, updateAUserService, deleteAUserService, getDashboardStatsService,getExpertsService,
     createExpertsService, updateAExpertsService, deleteAExpertsService, getAllworkshopService, getAworkshopService,
-    updateAworkshopService, updateAProfileService, updateAPasswordService
+    updateAworkshopService, updateAProfileService, updateAPasswordService,
+    getAllprojectsService,getAprojectsService,updateAprojectService
 
 } from "../../services/admin/admin-service";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -197,4 +198,33 @@ export const updateAPassword = async (req: Request, res: Response) => {
     }
 }
 
+export const getAllprojects = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+        const response = await getAllprojectsService({ userId }, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" })
+    }
+}
 
+export const getAproject = async (req: Request, res: Response) => {
+    try {
+        const response = await getAprojectsService(req.params.id, req.body, res);
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+export const updateAproject = async (req: Request, res: Response) => {
+    try {
+        const response = await updateAprojectService(req.params.id, req.body, res);
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}

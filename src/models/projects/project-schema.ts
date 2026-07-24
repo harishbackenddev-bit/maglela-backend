@@ -44,6 +44,14 @@ const ProjectSchema = new Schema(
             type: String,
             default: null,
         },
+        adminnote: {
+            type: String,
+            default: null,
+        },
+        adminattachment: {
+            type: String,
+            default: null,
+        },
 
         status: {
             type: String,

@@ -12,6 +12,8 @@ import { usersModel } from "src/models/user/user-schema";
 import { expertsModel } from "src/models/experts/expert-schema";
 import { customAlphabet } from "nanoid"
 import { workshopModel } from "src/models/workshop/workshop-schema";
+import { projectModel } from "src/models/projects/project-schema";
+
 
 export const loginService = async (payload: any, res: Response) => {
     const { username, password } = payload;
@@ -483,6 +485,100 @@ export const updateAworkshopService = async (
     return {
       success: false,
       message: error.message || "Failed to update workshop",
+      data: null,
+    };
+  }
+};
+
+
+export const getAllprojectsService = async (payload: any, res: Response) => {
+  // console.log("userIdpayload", userId);
+  const user = await projectModel.find();
+
+  return {
+    success: true,
+    message: "projects fetched successfully",
+    data: user
+  };
+}
+
+
+export const getAprojectsService = async (
+  id: string,
+  body: any,
+  res: Response
+) => {
+  try {
+    // Check if expert exists
+    const projects = await projectModel.findById(id);
+    
+    if (!projects) {
+      return {
+        success: false,
+        message: "projects not found",
+        data: null,
+      };
+    }
+
+
+    return {
+      success: true,
+      message: "projects fetched successfully",
+      data: projects,
+    };
+  } catch (error: any) {
+    console.error("Error fetched projects:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetched projects",
+      data: null,
+    };
+  }
+};
+
+
+export const updateAprojectService = async (
+  id: string,
+  body: any,
+  res: Response
+) => {
+  try {
+    // Check if projects exists
+    const existingprojects = await projectModel.findById(id);
+    
+    if (!existingprojects) {
+      return {
+        success: false,
+        message: "projects not found",
+        data: null,
+      };
+    }
+
+    // Update projects
+    const projects = await projectModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          ...body,
+          updatedAt: new Date(),
+        },
+      },
+      {
+        new: true, // Return updated document
+        runValidators: true, // Run schema validators
+      }
+    );
+
+    return {
+      success: true,
+      message: "workshop updated successfully",
+      data: projects,
+    };
+  } catch (error: any) {
+    console.error("Error updating projects:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update projects",
       data: null,
     };
   }
