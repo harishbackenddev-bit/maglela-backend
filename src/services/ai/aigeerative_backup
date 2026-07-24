@@ -1,0 +1,313 @@
+// services/ai/aiGenerateService.ts
+import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { 
+    AI_MODELS, 
+    getModelForDocumentType,
+    calculateDraftCost,
+    EXCHANGE_RATE 
+} from "../../config/ai-cost-config";
+
+// Initialize AI clients
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+interface GenerateParams {
+    title: string;
+    type: string;
+    tone: string;
+    includeOutline: boolean;
+    fileContent: string;
+    userId: string;
+}
+
+interface GenerateResult {
+    content: string;
+    outline?: string;
+    wordCount: number;
+    tokensUsed: {
+        input: number;
+        output: number;
+        total: number;
+    };
+    modelUsed: string;
+    costEstimate: {
+        usd: number;
+        zar: number;
+    };
+    generatedAt: string;
+}
+
+export const aiGenerateService = async (params: GenerateParams): Promise<GenerateResult> => {
+    const { title, type, tone, includeOutline, fileContent, userId } = params;
+
+    // Determine which AI to use based on document type
+    const modelName = getModelForDocumentType(type);
+    const modelConfig = AI_MODELS.find(m => m.name === modelName);
+
+    if (!modelConfig) {
+        throw new Error(`Model ${modelName} not found`);
+    }
+
+    let content: string = "";
+    let outline: string | undefined;
+    let inputTokens: number = 0;
+    let outputTokens: number = 0;
+    let modelUsed: string = modelName;
+
+    try {
+        // Route to appropriate AI service
+        if (modelName === 'claude-sonnet-4.6') {
+            const result = await generateWithClaude(fileContent, title, type, tone, includeOutline);
+            content = result.content;
+            outline = result.outline;
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+        } else if (modelName === 'gpt-4o') {
+            const result = await generateWithOpenAI(fileContent, title, type, tone);
+            content = result.content;
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+        } else if (modelName === 'claude-haiku-4.5') {
+            const result = await generateWithHaiku(fileContent, title, type, tone);
+            content = result.content;
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+        } else {
+            // Fallback to Claude Sonnet
+            const result = await generateWithClaude(fileContent, title, type, tone, includeOutline);
+            content = result.content;
+            outline = result.outline;
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+        }
+
+        // Calculate word count
+        const wordCount = content.split(/\s+/).length;
+
+        // Calculate cost
+        const cost = calculateDraftCost(modelUsed, inputTokens, outputTokens);
+
+        return {
+            content,
+            outline,
+            wordCount,
+            tokensUsed: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens,
+            },
+            modelUsed,
+            costEstimate: cost,
+            generatedAt: new Date().toISOString(),
+        };
+
+    } catch (error: any) {
+        console.error("AI generation error:", error);
+        throw new Error(error.message || "Failed to generate content");
+    }
+};
+
+// Claude Sonnet Generation (Complex tasks)
+const generateWithClaude = async (
+    content: string, 
+    title: string, 
+    type: string, 
+    tone: string, 
+    includeOutline: boolean
+) => {
+    const response = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 4000,
+        temperature: 0.7,
+        system: getClaudeSystemPrompt(tone),
+        messages: [
+            {
+                role: "user",
+                content: getClaudeUserPrompt(content, title, type, includeOutline),
+            },
+        ],
+    });
+
+    const result = response.content[0]?.type === "text" ? response.content[0].text : "";
+    return {
+        content: result,
+        outline: extractOutline(result),
+        inputTokens: response.usage?.input_tokens || 0,
+        outputTokens: response.usage?.output_tokens || 0,
+    };
+};
+
+// Claude Haiku Generation (Simple tasks)
+const generateWithHaiku = async (
+    content: string, 
+    title: string, 
+    type: string, 
+    tone: string
+) => {
+    const response = await anthropic.messages.create({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 1500,
+        temperature: 0.5,
+        system: getHaikuSystemPrompt(tone),
+        messages: [
+            {
+                role: "user",
+                content: getHaikuUserPrompt(content, title, type),
+            },
+        ],
+    });
+
+    const result = response.content[0]?.type === "text" ? response.content[0].text : "";
+    return {
+        content: result,
+        inputTokens: response.usage?.input_tokens || 0,
+        outputTokens: response.usage?.output_tokens || 0,
+    };
+};
+
+// OpenAI Generation (Summaries)
+const generateWithOpenAI = async (
+    content: string, 
+    title: string, 
+    type: string, 
+    tone: string
+) => {
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: 2000,
+        temperature: 0.5,
+        messages: [
+            {
+                role: "system",
+                content: getOpenAISystemPrompt(tone),
+            },
+            {
+                role: "user",
+                content: getOpenAIUserPrompt(content, title, type),
+            },
+        ],
+    });
+
+    const result = response.choices[0]?.message?.content || "";
+    return {
+        content: result,
+        inputTokens: response.usage?.prompt_tokens || 0,
+        outputTokens: response.usage?.completion_tokens || 0,
+    };
+};
+
+// ============================================
+// PROMPT GENERATORS
+// ============================================
+
+const getClaudeSystemPrompt = (tone: string): string => {
+    const toneInstructions: Record<string, string> = {
+        formal: "Write in a formal, academic tone. Use precise language, avoid contractions, and maintain a professional register.",
+        authoritative: "Write with authority and confidence. Use declarative statements and demonstrate deep expertise.",
+        accessible: "Write in clear, accessible language. Avoid jargon and explain complex concepts simply.",
+        persuasive: "Write persuasively. Use rhetorical devices and compelling arguments.",
+        neutral: "Write in a balanced, neutral tone. Present information objectively.",
+    };
+
+    return `You are Magalela's Narrative Engine, an expert institutional communication assistant.
+Your task is to transform research and data into high-quality institutional content.
+
+${toneInstructions[tone] || toneInstructions.neutral}
+
+Important guidelines:
+1. Always base content on the provided source material
+2. Cite specific findings and data points from the source
+3. Maintain academic integrity while making content accessible
+4. Do not add information not supported by the source
+5. Structure content clearly with appropriate headings
+6. Output must be publication-ready and professional`;
+};
+
+const getClaudeUserPrompt = (
+    content: string, 
+    title: string, 
+    type: string, 
+    includeOutline: boolean
+): string => {
+    const typeInstructions: Record<string, string> = {
+        'policy-brief': 'Create a structured policy brief with: 1) Executive Summary, 2) Key Findings, 3) Policy Recommendations, 4) Evidence Base, 5) Conclusion.',
+        'op-ed': 'Write a compelling op-ed with: 1) Strong opening hook, 2) Clear argument, 3) Evidence and examples, 4) Call to action.',
+        'impact-report': 'Create an impact report with: 1) Executive Summary, 2) Key Achievements, 3) Data and Metrics, 4) Case Studies, 5) Future Outlook.',
+        'speech': 'Write a speech with: 1) Opening remarks, 2) Main message, 3) Supporting points, 4) Inspiring conclusion.',
+        'press-release': 'Write a press release with: 1) Headline, 2) Lead paragraph, 3) Body with key details, 4) Quote, 5) Boilerplate.',
+        'blog-post': 'Write a blog post with: 1) Engaging title, 2) Introduction, 3) Key points, 4) Conclusion, 5) Call to action.',
+    };
+
+    const typeInstruction = typeInstructions[type] || 'Generate appropriate content based on the source.';
+
+    let prompt = `Title: ${title}\n\nSource Material:\n${content}\n\n`;
+    prompt += `Task: ${typeInstruction}\n\n`;
+    prompt += `Please generate a ${type} based on the source material provided.`;
+
+    if (includeOutline) {
+        prompt += ' Please also provide a detailed outline at the beginning of the response.';
+    }
+
+    return prompt;
+};
+
+const getHaikuSystemPrompt = (tone: string): string => {
+    return `You are Magalela's AI Assistant. Generate concise, accurate content in a ${tone} tone.
+Focus on extracting key information and presenting it clearly. Be brief but comprehensive.`;
+};
+
+const getHaikuUserPrompt = (content: string, title: string, type: string): string => {
+    return `Title: ${title}\n\nSource:\n${content}\n\nGenerate a ${type} summarizing the key points. Keep it concise and well-structured.`;
+};
+
+const getOpenAISystemPrompt = (tone: string): string => {
+    return `You are Magalela's AI Assistant. Generate clear, structured summaries in a ${tone} tone.
+Extract and highlight key findings. Present information logically. Keep the summary concise but comprehensive.`;
+};
+
+const getOpenAIUserPrompt = (content: string, title: string, type: string): string => {
+    return `Title: ${title}\n\nSource Material:\n${content}\n\nGenerate a ${type} summarizing the key points and findings. Structure it with clear sections.`;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+const extractOutline = (content: string): string | undefined => {
+    const lines = content.split('\n');
+    const outlineLines: string[] = [];
+    let collecting = false;
+
+    for (const line of lines) {
+        // Look for outline indicators
+        if (line.match(/^\s*(Outline|Table of Contents|Overview|Structure):/i)) {
+            collecting = true;
+            outlineLines.push(line.trim());
+            continue;
+        }
+
+        if (collecting) {
+            // Stop if we hit a double newline or a heading
+            if (line.trim() === '' && outlineLines.length > 1) {
+                break;
+            }
+            if (line.match(/^#{1,3}\s+/)) {
+                break;
+            }
+            outlineLines.push(line.trim());
+        }
+
+        // Also collect numbered or bulleted lists at the start
+        if (!collecting && (line.match(/^\s*[\d.]+[\)]?\s+/) || line.match(/^[\s-]+/))) {
+            outlineLines.push(line.trim());
+        }
+    }
+
+    return outlineLines.length > 0 ? outlineLines.join('\n') : undefined;
+};
