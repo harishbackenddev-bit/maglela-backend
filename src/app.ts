@@ -27,6 +27,7 @@ const corsOptions = {
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
     "http://localhost:5174",
+    "https://mutual-maglela.vercel.app"
   ],
   methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
   credentials: true,

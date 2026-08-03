@@ -33,6 +33,7 @@ router.route("/two-factor").post(checkAuth, twoFactorAuth);
 router.route("/workshops").post(checkAuth, createWorkshop).get(checkAuth, getworkshop);
 router.route("/projects").post(checkAuth, createProjects).get(checkAuth, getprojects);
 router.post("/upload-document", checkAuth, uploadDocument.single("document"), documentUpload);
+router.route("/workshops-guest").post(checkAuth, createWorkshop)
 
 // ============================================
 // PAYFAST ORDER ROUTES

@@ -451,7 +451,7 @@ export const createWorkshopService = async (
 
     const workshop = await workshopModel.create({
       ...body,
-      userId,
+      userId: userId || "guest",
       identifier: identifier(),
     });
 

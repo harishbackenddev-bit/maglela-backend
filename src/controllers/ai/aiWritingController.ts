@@ -26,7 +26,7 @@ export const generateDocument = async (req: Request, res: Response) => {
             });
         }
 
-        const userId = (req as any).currentUser || req.userId;
+        const userId = (req as any).currentUser;
         const response = await aiGenerateService({
             ...req.body,
             userId,
@@ -109,7 +109,7 @@ export const generateWithClaude = async (req: Request, res: Response) => {
             });
         }
 
-        const userId = (req as any).currentUser || req.userId;
+        const userId = (req as any).currentUser;
         const response = await generateWithClaudeService({
             ...req.body,
             userId
@@ -143,7 +143,7 @@ export const generateWithOpenAI = async (req: Request, res: Response) => {
             });
         }
 
-        const userId = (req as any).currentUser || req.userId;
+        const userId = (req as any).currentUser;
         const response = await generateWithOpenAIService({
             ...req.body,
             userId

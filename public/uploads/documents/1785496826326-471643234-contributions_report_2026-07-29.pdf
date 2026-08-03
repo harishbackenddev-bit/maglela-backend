@@ -1,0 +1,26 @@
+
+                <html>
+                    <head>
+                        <title>Contributions Report</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            h1 { color: #333; }
+                            .header { margin-bottom: 20px; }
+                            .summary { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+                            .total { font-weight: bold; font-size: 18px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>Contributions Report</h1>
+                            <p><strong>Date Range:</strong> 2025-12-12 to 2026-12-12</p>
+                            <p><strong>Generated:</strong> 7/29/2026, 2:56:26 PM</p>
+                            <p><strong>Total Records:</strong> 1</p>
+                        </div>
+                        <table style="width:100%; border-collapse: collapse;"><thead><tr><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Date</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Member</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Amount</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Type</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Status</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Reference</th><th style="border:1px solid #ddd; padding:8px; background:#f2f2f2; text-align:left;">Payment Method</th></tr></thead><tbody><tr><td style="border:1px solid #ddd; padding:8px;">2026-07-29</td><td style="border:1px solid #ddd; padding:8px;">member1</td><td style="border:1px solid #ddd; padding:8px;">20</td><td style="border:1px solid #ddd; padding:8px;">Contribution</td><td style="border:1px solid #ddd; padding:8px;">Approved</td><td style="border:1px solid #ddd; padding:8px;">CWCWW</td><td style="border:1px solid #ddd; padding:8px;">cashapp</td></tr></tbody></table>
+                        <div class="summary">
+                            <p class="total">Total Amount: $20</p>
+                        </div>
+                    </body>
+                </html>
+            
