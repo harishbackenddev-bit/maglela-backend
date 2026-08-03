@@ -4,6 +4,8 @@ import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
 import { extractTextFromFile } from "../../utils/fileProcessor";
 import { aiGenerateService as aiGenerateCore } from "./aiGenerateService";
+import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
+
 
 // Main AI Generation Service
 export const aiGenerateService = async (payload: any, res: Response) => {
@@ -36,6 +38,38 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             fileContent,
             userId
         });
+
+
+        // Save generated content
+        try {
+            const newContent = new aiContentModel({
+                userId,
+                contentType: "writing",
+                title: title.trim(),
+                description: `Document generated: ${title}`,
+                content: result.content,
+                provider: result.provider || "openai",
+                aiModel: result.modelUsed || "gpt-4o", // use modelName if your schema has it
+                charCount: result.wordCount || 0,
+                cost: result.costEstimate || { usd: 0, zar: 0 },
+                status: "Pending",
+                metadata: {
+                    type,
+                    tone: tone || "neutral",
+                    includeOutline: includeOutline === "true" || includeOutline === true,
+                    outline: result.outline,
+                    wordCount: result.wordCount,
+                    tokensUsed: result.tokensUsed,
+                    fileName: file.originalname,
+                    fileType: file.mimetype,
+                    generatedAt: new Date(),
+                },
+            });
+
+            await newContent.save();
+        } catch (dbError) {
+            console.error("Database save error:", dbError);
+        }
 
         return {
             success: true,
@@ -183,7 +217,7 @@ export const generateWithClaudeService = async (payload: any, res: Response) => 
         const { content, title, type, tone } = payload;
         // Implementation using Claude API
         // Import and use claudeService from your existing structure
-        
+
         // For now, return a placeholder response
         return {
             success: true,
@@ -208,7 +242,7 @@ export const generateWithOpenAIService = async (payload: any, res: Response) => 
         const { content, title, type, tone } = payload;
         // Implementation using OpenAI API
         // Import and use openaiService from your existing structure
-        
+
         // For now, return a placeholder response
         return {
             success: true,

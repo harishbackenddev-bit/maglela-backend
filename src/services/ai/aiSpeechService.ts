@@ -2,9 +2,10 @@
 import { Response } from "express";
 import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
-import { 
+import {
     aiGenerateSpeechService
 } from "./aiGenerateSpeechService";
+import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -14,12 +15,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ============================================
-// MAIN SPEECH GENERATION SERVICE
+// MAIN SPEECH GENERATION SERVICE (WITH AUTO-SAVE)
 // ============================================
 
 export const generateSpeechService = async (payload: any, res: Response) => {
     try {
-        const { 
+        const {
             title,
             authority,
             clarity,
@@ -31,13 +32,23 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             audio,
             recordingDuration,
             userId,
-            preferredProvider
+            preferredProvider,
+            description, // Optional description for database
+            author // Optional author name
         } = payload;
 
         // Validate
         if (!title) {
             return errorResponseHandler(
                 "Title is required",
+                httpStatusCode.BAD_REQUEST,
+                res
+            );
+        }
+
+        if (!userId) {
+            return errorResponseHandler(
+                "User ID is required",
                 httpStatusCode.BAD_REQUEST,
                 res
             );
@@ -63,14 +74,13 @@ export const generateSpeechService = async (payload: any, res: Response) => {
         let audioUrl = "";
         try {
             audioUrl = await saveAudioFile(
-                result.audioData, 
-                result.format || "mp3", 
+                result.audioData,
+                result.format || "mp3",
                 userId
             );
             console.log("✅ Audio saved successfully:", audioUrl);
         } catch (saveError) {
             console.error("❌ Failed to save audio file:", saveError);
-            // Continue even if save fails - use base64 fallback
         }
 
         // ✅ If audioUrl is empty, use base64 fallback
@@ -78,6 +88,94 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             console.warn("⚠️ Audio URL is empty, using base64 fallback");
             const base64Audio = result.audioData.toString('base64');
             audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+        }
+
+        // Calculate average score
+        const avgScore = Math.floor(
+            (result.analysis.authority +
+                result.analysis.clarity +
+                result.analysis.academicRigor +
+                result.analysis.accessibility +
+                result.analysis.narrativeDepth) / 5
+        );
+
+        // Format duration
+        const formatDuration = (seconds: number): string => {
+            if (!seconds || isNaN(seconds) || seconds < 0) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // ✅ AUTO-SAVE TO DATABASE
+        let savedContent = null;
+        try {
+            // Check if content already exists with same title
+            const existingContent = await aiContentModel.findOne({
+                userId,
+                title: title.trim(),
+                contentType: 'speech',
+                status: { $ne: 'Rejected' }
+            });
+
+            if (existingContent) {
+                // ✅ UPDATE existing content
+                existingContent.content = result.text;
+                existingContent.parameters = result.analysis;
+                existingContent.avgScore = avgScore;
+                existingContent.duration = formatDuration(result.duration);
+                existingContent.audioUrl = audioUrl;
+                existingContent.provider = result.provider;
+                existingContent.aiModel = result.model;
+                existingContent.charCount = result.charCount;
+                existingContent.cost = result.cost;
+                existingContent.metadata = {
+                    ...existingContent.metadata,
+                    inputMethod: payload.inputMethod || 'ai',
+                    ...(file && { fileName: file.originalname }),
+                    ...(recordingDuration && { recordingDuration: Number(recordingDuration) }),
+                    lastGeneratedAt: new Date().toISOString()
+                };
+                existingContent.status = 'Pending'; // Reset status for admin review
+
+                await existingContent.save();
+                savedContent = existingContent;
+                console.log(`✅ Updated existing speech: ${existingContent.identifier}`);
+
+            } else {
+                // ✅ CREATE new content
+                const newContent = new aiContentModel({
+                    userId,
+                    contentType: 'speech',
+                    title: title.trim(),
+                    description: description || `Speech generated for: ${title}`,
+                    content: result.text,
+                    parameters: result.analysis,
+                    avgScore: avgScore,
+                    duration: formatDuration(result.duration),
+                    audioUrl: audioUrl,
+                    provider: result.provider,
+                    model: result.model,
+                    charCount: result.charCount,
+                    cost: result.cost,
+                    author: author || 'AI Assistant',
+                    status: 'Pending',
+                    metadata: {
+                        inputMethod: payload.inputMethod || 'ai',
+                        ...(file && { fileName: file.originalname }),
+                        ...(recordingDuration && { recordingDuration: Number(recordingDuration) }),
+                        generatedAt: new Date().toISOString()
+                    }
+                });
+
+                await newContent.save();
+                savedContent = newContent;
+                console.log(`✅ Saved new speech: ${newContent.identifier}`);
+            }
+
+        } catch (dbError: any) {
+            console.error("❌ Database save error:", dbError);
+            // Continue even if DB save fails - user can save manually later
         }
 
         // Build response data
@@ -98,6 +196,16 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             }
         };
 
+        // Add database info if saved
+        if (savedContent) {
+            responseData.database = {
+                id: savedContent._id,
+                identifier: savedContent.identifier,
+                status: savedContent.status,
+                savedAt: savedContent.createdAt
+            };
+        }
+
         // Add optional fields if they exist
         if (file) {
             responseData.file = {
@@ -117,7 +225,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
 
         return {
             success: true,
-            message: "Speech generated successfully",
+            message: savedContent ? "Speech generated and saved successfully" : "Speech generated successfully",
             data: responseData
         };
 
@@ -132,7 +240,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
 };
 
 // ============================================
-// ✅ FIXED: SAVE AUDIO FILE - Type Safe
+// SAVE AUDIO FILE
 // ============================================
 
 const saveAudioFile = async (
@@ -141,41 +249,24 @@ const saveAudioFile = async (
     userId: string
 ): Promise<string> => {
     try {
-        // ✅ Use project root directory
         const projectRoot = path.resolve(__dirname, "../../..");
         const uploadDir = path.join(projectRoot, "public", "uploads", "audio");
-        
-        console.log("📁 Project root:", projectRoot);
-        console.log("📁 Upload directory:", uploadDir);
-        
-        // ✅ Create directory if it doesn't exist
+
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
-            console.log("📁 Created upload directory:", uploadDir);
         }
 
-        // ✅ Generate unique filename
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2, 8);
         const filename = `speech_${userId}_${timestamp}_${random}.${format || 'mp3'}`;
         const filepath = path.join(uploadDir, filename);
-        
-        console.log("💾 Saving audio to:", filepath);
-        
-        // ✅ FIX: Convert Buffer to Uint8Array for TypeScript compatibility
+
+        // ✅ Convert Buffer to Uint8Array for TypeScript compatibility
         const uint8Array = new Uint8Array(audioData);
         fs.writeFileSync(filepath, uint8Array);
-        
-        // ✅ Verify file was saved
-        if (fs.existsSync(filepath)) {
-            const stats = fs.statSync(filepath);
-            console.log(`✅ Audio saved: ${filename} (${stats.size} bytes)`);
-            return `/uploads/audio/${filename}`;
-        } else {
-            console.error("❌ File not found after save!");
-            return "";
-        }
-        
+
+        return `/uploads/audio/${filename}`;
+
     } catch (error) {
         console.error("❌ Error saving audio file:", error);
         return "";
@@ -247,7 +338,7 @@ export const getCostEstimatesService = async (params: any, res: Response) => {
 export const getAICostEstimatesService = async (params: any, res: Response) => {
     try {
         const exchangeRate = 16.6;
-        
+
         const estimates = {
             providers: [
                 {
