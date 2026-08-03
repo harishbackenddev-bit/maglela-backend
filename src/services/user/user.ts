@@ -12,6 +12,8 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { adminModel } from "src/models/admin/admin-schema";
 import { workshopModel } from "src/models/workshop/workshop-schema";
 import { projectModel } from "src/models/projects/project-schema";
+import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
+
 
 export const signupService = async (payload: any, res: Response) => {
   const emailExists = await usersModel.findOne({
@@ -556,3 +558,61 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
 
   return userId;
 }
+
+// ============================================
+// ✅ GET ALL AI WRITING DATA
+// ============================================
+
+export const getAIwritingDataService = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+
+        const data = await aiContentModel.find({
+            userId: userId,
+            contentType: 'writing'
+        }).sort({ createdAt: -1 });
+
+        return {
+            success: true,
+            message: "Writing data fetched successfully",
+            data: data
+        };
+
+    } catch (error: any) {
+        console.error("Error fetching writing data:", error);
+        return errorResponseHandler(
+            error.message || "Failed to fetch writing data",
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            res
+        );
+    }
+};
+
+// ============================================
+// ✅ GET ALL AI SPEECH DATA
+// ============================================
+
+export const getAIspeechDataService = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+
+        const data = await aiContentModel.find({
+            userId: userId,
+            contentType: 'speech'
+        }).sort({ createdAt: -1 });
+
+        return {
+            success: true,
+            message: "Speech data fetched successfully",
+            data: data
+        };
+
+    } catch (error: any) {
+        console.error("Error fetching speech data:", error);
+        return errorResponseHandler(
+            error.message || "Failed to fetch speech data",
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            res
+        );
+    }
+};

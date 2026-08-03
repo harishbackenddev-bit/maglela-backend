@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { calculateSpeechCost } from "../../config/ai-speech-config";
 
 // ============================================
-// INITIALIZE CLIENTS (Like AI Writing)
+// INITIALIZE CLIENTS
 // ============================================
 
 let openai: OpenAI | null = null;
@@ -25,7 +25,12 @@ if (process.env.OPENAI_API_KEY) {
 // Initialize Anthropic (Optional)
 if (process.env.ANTHROPIC_API_KEY) {
     try {
-        anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        anthropic = new Anthropic({ 
+            apiKey: process.env.ANTHROPIC_API_KEY,
+            defaultHeaders: {
+                'anthropic-version': '2023-06-01'
+            }
+        });
         console.log("✅ Anthropic (Claude) client initialized");
     } catch (error) {
         console.warn("⚠️ Failed to initialize Anthropic client");
@@ -36,6 +41,184 @@ if (process.env.ANTHROPIC_API_KEY) {
 
 // Check if any AI service is available
 const isSpeechEnabled = !!(openai || anthropic);
+
+// ============================================
+// ✅ ANTHROPIC MODELS (Consistent with aiGenerateService)
+// ============================================
+
+const ANTHROPIC_MODELS = {
+    // ✅ Latest Models (March 2026)
+    CLAUDE_SONNET_4_6: "claude-sonnet-4-6",      // ~R1.49 per draft
+    CLAUDE_OPUS_4_8: "claude-opus-4-8",          // Most capable
+};
+
+const OPENAI_MODELS = {
+    GPT_4O: "gpt-4o",                            // ~R0.83 per task
+    GPT_4O_MINI: "gpt-4o-mini",                  // Cheaper for simple tasks
+};
+
+// ============================================
+// ✅ MODEL EXISTENCE CHECK
+// ============================================
+
+const modelExists = (model: string): boolean => {
+    // Check in Anthropic models
+    const anthropicModels = Object.values(ANTHROPIC_MODELS);
+    if (anthropicModels.includes(model)) return true;
+    
+    // Check in OpenAI models
+    const openaiModels = Object.values(OPENAI_MODELS);
+    if (openaiModels.includes(model)) return true;
+    
+    // Check in speech models (for TTS)
+    const speechModels = ["tts-1", "tts-1-hd"];
+    if (speechModels.includes(model)) return true;
+    
+    return false;
+};
+
+// ============================================
+// SMART ROUTER
+// ============================================
+
+interface RouterDecision {
+    provider: 'openai' | 'anthropic';
+    model: string;
+    reason: string;
+    confidence: number;
+}
+
+const smartRouter = (params: {
+    title: string;
+    authority: number;
+    clarity: number;
+    academicRigor: number;
+    accessibility: number;
+    narrativeDepth: number;
+    fileContent?: string;
+    recordingDuration?: string | number;
+    preferredProvider?: 'openai' | 'anthropic';
+    isBulk?: boolean;
+}): RouterDecision => {
+    const { 
+        title, 
+        authority, 
+        clarity, 
+        academicRigor, 
+        accessibility, 
+        narrativeDepth, 
+        fileContent,
+        recordingDuration,
+        preferredProvider,
+        isBulk
+    } = params;
+
+    if (preferredProvider === 'openai' && openai) {
+        return {
+            provider: 'openai',
+            model: OPENAI_MODELS.GPT_4O,
+            reason: 'User explicitly requested OpenAI',
+            confidence: 100
+        };
+    }
+    if (preferredProvider === 'anthropic' && anthropic) {
+        return {
+            provider: 'anthropic',
+            model: ANTHROPIC_MODELS.CLAUDE_SONNET_4_6,
+            reason: 'User explicitly requested Claude',
+            confidence: 100
+        };
+    }
+
+    // ✅ Bulk processing
+    if (isBulk) {
+        return {
+            provider: 'openai',
+            model: OPENAI_MODELS.GPT_4O_MINI,
+            reason: 'Bulk processing - using cost-effective model',
+            confidence: 90
+        };
+    }
+
+    let claudeScore = 0;
+    let openaiScore = 0;
+
+    // Claude Sonnet 4.6 - Best for natural, narrative speech
+    if (authority > 70) claudeScore += 20;
+    if (narrativeDepth > 70) claudeScore += 30;
+    if (academicRigor > 70) claudeScore += 20;
+    if (fileContent && fileContent.length > 5000) claudeScore += 15;
+    if (recordingDuration && Number(recordingDuration) > 120) claudeScore += 15;
+
+    // GPT-4o - Best for clarity and accessibility
+    if (clarity > 70) openaiScore += 30;
+    if (accessibility > 70) openaiScore += 20;
+    if (authority < 50 && clarity > 70) openaiScore += 20;
+    if (!fileContent || fileContent.length < 2000) openaiScore += 15;
+    if (recordingDuration && Number(recordingDuration) < 60) openaiScore += 15;
+
+    // Combined metrics
+    if (authority > 60 && narrativeDepth > 60) claudeScore += 15;
+    if (clarity > 80 && accessibility > 80) openaiScore += 20;
+    if (academicRigor > 60 && authority > 60) claudeScore += 15;
+
+    if (!anthropic) claudeScore = -1;
+    if (!openai) openaiScore = -1;
+
+    // ✅ Decision
+    if (claudeScore > openaiScore && anthropic) {
+        let model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
+        let reason = `Claude Sonnet 4.6 better for speech (Authority=${authority}, Narrative=${narrativeDepth})`;
+        
+        if (academicRigor > 80 || authority > 80 || (fileContent && fileContent.length > 10000)) {
+            model = ANTHROPIC_MODELS.CLAUDE_OPUS_4_8;
+            reason = `Claude Opus 4.8 better for complex speech (Authority=${authority}, Academic=${academicRigor})`;
+        }
+        
+        if (!modelExists(model)) {
+            model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
+            reason = `Fallback to Claude Sonnet 4.6 (${model} not available)`;
+        }
+        
+        return {
+            provider: 'anthropic',
+            model: model,
+            reason: reason,
+            confidence: Math.min(Math.round((claudeScore / (claudeScore + openaiScore)) * 100), 95)
+        };
+    } else if (openaiScore > claudeScore && openai) {
+        let model = OPENAI_MODELS.GPT_4O;
+        let reason = `GPT-4o better for speech (Clarity=${clarity}, Accessibility=${accessibility})`;
+        
+        if (isBulk || !fileContent || fileContent.length < 1000) {
+            model = OPENAI_MODELS.GPT_4O_MINI;
+            reason = `GPT-4o Mini for simple speech (Clarity=${clarity})`;
+        }
+        
+        return {
+            provider: 'openai',
+            model: model,
+            reason: reason,
+            confidence: Math.min(Math.round((openaiScore / (claudeScore + openaiScore)) * 100), 95)
+        };
+    } else if (openai) {
+        return {
+            provider: 'openai',
+            model: OPENAI_MODELS.GPT_4O,
+            reason: 'OpenAI selected as fallback',
+            confidence: 70
+        };
+    } else if (anthropic) {
+        return {
+            provider: 'anthropic',
+            model: ANTHROPIC_MODELS.CLAUDE_SONNET_4_6,
+            reason: 'Claude Sonnet 4.6 selected as fallback',
+            confidence: 70
+        };
+    } else {
+        throw new Error("No AI service available. Please check your API keys.");
+    }
+};
 
 // ============================================
 // INTERFACES
@@ -53,7 +236,8 @@ interface SpeechParams {
     audio?: string;
     recordingDuration?: string | number;
     userId: string;
-    preferredProvider?: 'openai' | 'anthropic'; // Optional: force a specific provider
+    preferredProvider?: 'openai' | 'anthropic';
+    isBulk?: boolean;
 }
 
 interface SpeechResult {
@@ -80,6 +264,12 @@ interface SpeechResult {
         audio?: string;
         recordingDuration?: number;
     };
+    routerDecision?: {
+        provider: string;
+        model: string;
+        reason: string;
+        confidence: number;
+    };
 }
 
 // ============================================
@@ -95,14 +285,14 @@ const generateTextWithClaude = async (params: {
     narrativeDepth: number;
     fileContent?: string;
     recordingDuration?: string | number;
+    preferredModel?: string;
 }): Promise<string> => {
     if (!anthropic) {
         throw new Error("Anthropic client is not available. Please set ANTHROPIC_API_KEY.");
     }
 
-    const { title, authority, clarity, academicRigor, accessibility, narrativeDepth, fileContent, recordingDuration } = params;
+    const { title, authority, clarity, academicRigor, accessibility, narrativeDepth, fileContent, recordingDuration, preferredModel } = params;
 
-    // Build analysis context from metrics
     const analysisContext = `
 Content Quality Analysis:
 - Authority: ${authority}/100
@@ -139,26 +329,73 @@ Requirements:
 
 Generate the complete speech:`;
 
-    const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 2000,
-        temperature: 0.7,
-        system: systemPrompt,
-        messages: [
-            { 
-                role: "user", 
-                content: `Please generate a speech about "${title}" based on the analysis metrics.` 
-            },
-        ],
-    });
+    const modelToUse = preferredModel || ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
 
-    const result = response.content[0]?.type === "text" ? response.content[0].text : "";
-    
-    if (!result) {
-        throw new Error("Failed to generate speech content with Claude");
+    try {
+        console.log(`🤖 Generating speech with Claude model: ${modelToUse}`);
+        
+        const response = await anthropic.messages.create({
+            model: modelToUse,
+            max_tokens: 2000,
+            system: systemPrompt,
+            messages: [
+                { 
+                    role: "user", 
+                    content: `Please generate a speech about "${title}" based on the analysis metrics.` 
+                },
+            ],
+        });
+
+        const result = response.content[0]?.type === "text" ? response.content[0].text : "";
+        
+        if (!result) {
+            throw new Error("Failed to generate speech content with Claude");
+        }
+
+        return result;
+
+    } catch (error: any) {
+        console.error("Claude API Error:", error);
+        
+        if (error.status === 404 || error.message.includes("model")) {
+            const fallbackModels = [
+                ANTHROPIC_MODELS.CLAUDE_OPUS_4_8
+            ];
+            
+            for (const fallbackModel of fallbackModels) {
+                if (fallbackModel === modelToUse) continue;
+                if (!modelExists(fallbackModel)) continue;
+                
+                try {
+                    console.log(`⚠️ Trying fallback model: ${fallbackModel}`);
+                    const fallbackResponse = await anthropic.messages.create({
+                        model: fallbackModel,
+                        max_tokens: 2000,
+                        system: systemPrompt,
+                        messages: [
+                            { 
+                                role: "user", 
+                                content: `Please generate a speech about "${title}" based on the analysis metrics.` 
+                            },
+                        ],
+                    });
+                    const fallbackResult = fallbackResponse.content[0]?.type === "text" ? fallbackResponse.content[0].text : "";
+                    if (fallbackResult) {
+                        console.log(`✅ Fallback successful with model: ${fallbackModel}`);
+                        return fallbackResult;
+                    }
+                } catch (fallbackError) {
+                    console.error(`❌ Fallback with ${fallbackModel} failed:`, fallbackError);
+                }
+            }
+            
+            throw new Error("All Claude models failed. Please check your API key and available models.");
+        }
+        if (error.status === 401) {
+            throw new Error("Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY.");
+        }
+        throw new Error(error.message || "Failed to generate speech content with Claude");
     }
-
-    return result;
 };
 
 // ============================================
@@ -181,7 +418,6 @@ const generateTextWithOpenAI = async (params: {
 
     const { title, authority, clarity, academicRigor, accessibility, narrativeDepth, fileContent, recordingDuration } = params;
 
-    // Build analysis context from metrics
     const analysisContext = `
 Content Quality Analysis:
 - Authority: ${authority}/100
@@ -218,23 +454,29 @@ Requirements:
 
 Generate the complete speech:`;
 
-    const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        max_tokens: 2000,
-        temperature: 0.7,
-        messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Please generate a speech about "${title}" based on the analysis metrics.` },
-        ],
-    });
+    try {
+        const response = await openai.chat.completions.create({
+            model: OPENAI_MODELS.GPT_4O,
+            max_tokens: 2000,
+            temperature: 0.7,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Please generate a speech about "${title}" based on the analysis metrics.` },
+            ],
+        });
 
-    const result = response.choices[0]?.message?.content || "";
-    
-    if (!result) {
-        throw new Error("Failed to generate speech content with OpenAI");
+        const result = response.choices[0]?.message?.content || "";
+        
+        if (!result) {
+            throw new Error("Failed to generate speech content with OpenAI");
+        }
+
+        return result;
+
+    } catch (error: any) {
+        console.error("OpenAI API Error:", error);
+        throw new Error(error.message || "Failed to generate speech content with OpenAI");
     }
-
-    return result;
 };
 
 // ============================================
@@ -276,7 +518,7 @@ const generateWithOpenAITTS = async (text: string): Promise<{ audioData: Buffer;
 };
 
 // ============================================
-// GENERATE WITH CLAUDE + TTS (Like AI Writing)
+// GENERATE WITH CLAUDE + TTS
 // ============================================
 
 const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> => {
@@ -300,7 +542,18 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
         recordingDuration
     } = params;
 
-    // Step 1: Generate speech text with Claude
+    const routerDecision = smartRouter({
+        title,
+        authority,
+        clarity,
+        academicRigor,
+        accessibility,
+        narrativeDepth,
+        fileContent,
+        recordingDuration,
+        isBulk: params.isBulk || false,
+    });
+
     const speechText = await generateTextWithClaude({
         title,
         authority,
@@ -309,13 +562,12 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
         accessibility,
         narrativeDepth,
         fileContent,
-        recordingDuration
+        recordingDuration,
+        preferredModel: routerDecision.model,
     });
 
-    // Step 2: Convert to speech with OpenAI TTS
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    // Calculate costs (Claude + TTS)
     const claudeCostPer1000 = 0.015;
     const claudeCost = {
         usd: parseFloat(((speechText.length / 1000) * claudeCostPer1000).toFixed(4)),
@@ -335,7 +587,7 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
     return {
         audioData: audioResult.audioData,
         duration: audioResult.duration,
-        model: `claude-3-5-sonnet + ${audioResult.model}`,
+        model: `${routerDecision.model} + ${audioResult.model}`,
         provider: "anthropic",
         format: audioResult.format,
         charCount: audioResult.charCount,
@@ -348,12 +600,18 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
             accessibility,
             narrativeDepth
         },
-        optionalData: Object.keys(optionalData).length > 0 ? optionalData : undefined
+        optionalData: Object.keys(optionalData).length > 0 ? optionalData : undefined,
+        routerDecision: {
+            provider: routerDecision.provider,
+            model: routerDecision.model,
+            reason: routerDecision.reason,
+            confidence: routerDecision.confidence
+        }
     };
 };
 
 // ============================================
-// GENERATE WITH OPENAI + TTS (Like AI Writing)
+// GENERATE WITH OPENAI + TTS
 // ============================================
 
 const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> => {
@@ -374,7 +632,18 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
         recordingDuration
     } = params;
 
-    // Step 1: Generate speech text with OpenAI
+    const routerDecision = smartRouter({
+        title,
+        authority,
+        clarity,
+        academicRigor,
+        accessibility,
+        narrativeDepth,
+        fileContent,
+        recordingDuration,
+        isBulk: params.isBulk || false,
+    });
+
     const speechText = await generateTextWithOpenAI({
         title,
         authority,
@@ -386,10 +655,8 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
         recordingDuration
     });
 
-    // Step 2: Convert to speech with OpenAI TTS
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    // Calculate costs
     const openAICostPer1000 = 0.015;
     const openAICost = {
         usd: parseFloat(((speechText.length / 1000) * openAICostPer1000).toFixed(4)),
@@ -409,7 +676,7 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
     return {
         audioData: audioResult.audioData,
         duration: audioResult.duration,
-        model: `gpt-4o + ${audioResult.model}`,
+        model: `${routerDecision.model} + ${audioResult.model}`,
         provider: "openai",
         format: audioResult.format,
         charCount: audioResult.charCount,
@@ -422,42 +689,58 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
             accessibility,
             narrativeDepth
         },
-        optionalData: Object.keys(optionalData).length > 0 ? optionalData : undefined
+        optionalData: Object.keys(optionalData).length > 0 ? optionalData : undefined,
+        routerDecision: {
+            provider: routerDecision.provider,
+            model: routerDecision.model,
+            reason: routerDecision.reason,
+            confidence: routerDecision.confidence
+        }
     };
 };
 
 // ============================================
-// MAIN GENERATION FUNCTION (Like AI Writing)
+// MAIN GENERATION FUNCTION
 // ============================================
 
 export const aiGenerateSpeechService = async (params: SpeechParams): Promise<SpeechResult> => {
-    const { title, preferredProvider } = params;
+    const { title, preferredProvider, authority, clarity, academicRigor, accessibility, narrativeDepth, fileContent, recordingDuration, isBulk } = params;
 
     if (!title) {
         throw new Error("Title is required");
     }
 
-    // Check if any AI service is available
     if (!isSpeechEnabled) {
         throw new Error(
             "No AI service is configured. Please set either OPENAI_API_KEY or ANTHROPIC_API_KEY in your .env file."
         );
     }
 
+    const routerDecision = smartRouter({
+        title,
+        authority: authority || 0,
+        clarity: clarity || 0,
+        academicRigor: academicRigor || 0,
+        accessibility: accessibility || 0,
+        narrativeDepth: narrativeDepth || 0,
+        fileContent,
+        recordingDuration,
+        preferredProvider,
+        isBulk: isBulk || false,
+    });
+
+    console.log("🤖 Smart Router Decision for Speech:", routerDecision);
+
     let result: SpeechResult;
 
-    // Determine which provider to use (Like AI Writing pattern)
-    // Priority: preferredProvider > available services
-    if (preferredProvider === 'openai' && openai) {
-        result = await generateWithOpenAI(params);
-    } else if (preferredProvider === 'anthropic' && anthropic) {
-        result = await generateWithClaude(params);
+    if (routerDecision.provider === 'openai' && openai) {
+        result = await generateWithOpenAI({ ...params, isBulk });
+    } else if (routerDecision.provider === 'anthropic' && anthropic) {
+        result = await generateWithClaude({ ...params, isBulk });
     } else if (openai) {
-        // Fallback to OpenAI if available
-        result = await generateWithOpenAI(params);
+        result = await generateWithOpenAI({ ...params, isBulk });
     } else if (anthropic) {
-        // Fallback to Claude if OpenAI not available
-        result = await generateWithClaude(params);
+        result = await generateWithClaude({ ...params, isBulk });
     } else {
         throw new Error("No AI service available. Please check your API keys.");
     }
@@ -466,7 +749,7 @@ export const aiGenerateSpeechService = async (params: SpeechParams): Promise<Spe
 };
 
 // ============================================
-// UTILITY FUNCTIONS (Like AI Writing)
+// UTILITY FUNCTIONS
 // ============================================
 
 export const getAvailableProviders = (): string[] => {
@@ -487,3 +770,5 @@ export const getOpenAIStatus = (): boolean => {
 export const getClaudeStatus = (): boolean => {
     return !!anthropic;
 };
+
+export { smartRouter };

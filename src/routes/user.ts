@@ -1,7 +1,7 @@
 // routes/index.ts or routes/payfast.routes.ts
 import { Router } from "express";
 import { login, signup, userdata, forgotPassword, getDashboardStats, deleteAUser, updateAUser, twoFactorAuth, profileupdate, getNotificationPreferences, updateNotificationPreferences, 
-    updateAPassword, createWorkshop, getworkshop, createProjects, getprojects, documentUpload } from "../controllers/user/user";
+    updateAPassword, createWorkshop, getworkshop, createProjects, getprojects, documentUpload , getAIwritingData, getAIspeechData } from "../controllers/user/user";
 import { checkAuth } from "../middleware/check-auth";
 import { uploadProfile, uploadDocument } from "../config/multerConfig";
 import { 
@@ -34,6 +34,10 @@ router.route("/workshops").post(checkAuth, createWorkshop).get(checkAuth, getwor
 router.route("/projects").post(checkAuth, createProjects).get(checkAuth, getprojects);
 router.post("/upload-document", checkAuth, uploadDocument.single("document"), documentUpload);
 router.route("/workshops-guest").post(checkAuth, createWorkshop)
+
+router.get("/ai-writing", checkAuth, getAIwritingData);
+
+router.get("/ai-speech", checkAuth, getAIspeechData);
 
 // ============================================
 // PAYFAST ORDER ROUTES

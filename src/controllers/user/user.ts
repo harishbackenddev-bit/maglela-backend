@@ -6,7 +6,7 @@ import { formatZodErrors } from "../../validation/format-zod-errors"
 import { loginService, signupService,userdataServive, forgotPasswordService, verifyPasswordResetService,deleteAUserService,
      getDashboardStatsService, getUserInfoService, updateAUserService, updateAPasswordService, twoFactorAuthService,
     getNotificationPreferencesService, updateNotificationPreferencesService, createWorkshopService, getworkshopService,createProjectsService,
-    getprojectsService
+    getprojectsService, getAIwritingDataService, getAIspeechDataService
  } from "../../services/user/user"
 import { z } from "zod"
 import mongoose from "mongoose"
@@ -284,6 +284,30 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
     }
 }
+
+// getAIwritingData
+export const getAIwritingData = async (req: Request, res: Response) => {
+    try {
+        const response = await getAIwritingDataService(req, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+
+export const getAIspeechData = async (req: Request, res: Response) => {
+    try {
+        const response = await getAIspeechDataService(req, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+
 
 
 
