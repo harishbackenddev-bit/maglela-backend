@@ -616,3 +616,58 @@ export const getAIspeechDataService = async (req: Request, res: Response) => {
         );
     }
 };
+
+
+export const deleteAWritingContentService = async (id: string, res: Response) => {
+    try {
+        const content = await aiContentModel.findById(id);
+
+        if (!content) {
+            return errorResponseHandler(
+                "Writing content not found",
+                httpStatusCode.NOT_FOUND,
+                res
+            );
+        }
+
+        await aiContentModel.findByIdAndDelete(id);
+
+        return {
+            success: true,
+            message: "Writing content deleted successfully",
+        };
+    } catch (error: any) {
+        return errorResponseHandler(
+            error.message || "Failed to delete writing content",
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            res
+        );
+    }
+};
+
+export const deleteASpeechContentService = async (id: string, res: Response) => {
+    try {
+        const content = await aiContentModel.findById(id);
+
+        if (!content) {
+            return errorResponseHandler(
+                "Speech content not found",
+                httpStatusCode.NOT_FOUND,
+                res
+            );
+        }
+
+        await aiContentModel.findByIdAndDelete(id);
+
+        return {
+            success: true,
+            message: "Speech content deleted successfully",
+        };
+    } catch (error: any) {
+        return errorResponseHandler(
+            error.message || "Failed to delete speech content",
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            res
+        );
+    }
+};

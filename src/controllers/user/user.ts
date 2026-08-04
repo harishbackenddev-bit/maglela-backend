@@ -6,7 +6,7 @@ import { formatZodErrors } from "../../validation/format-zod-errors"
 import { loginService, signupService,userdataServive, forgotPasswordService, verifyPasswordResetService,deleteAUserService,
      getDashboardStatsService, getUserInfoService, updateAUserService, updateAPasswordService, twoFactorAuthService,
     getNotificationPreferencesService, updateNotificationPreferencesService, createWorkshopService, getworkshopService,createProjectsService,
-    getprojectsService, getAIwritingDataService, getAIspeechDataService
+    getprojectsService, getAIwritingDataService, getAIspeechDataService, deleteAWritingContentService, deleteASpeechContentService
  } from "../../services/user/user"
 import { z } from "zod"
 import mongoose from "mongoose"
@@ -307,6 +307,25 @@ export const getAIspeechData = async (req: Request, res: Response) => {
     }
 }
 
+export const deleteAWritingContent = async (req: Request, res: Response) => {
+    try {
+        const response = await deleteAWritingContentService(req.params.id, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+export const deleteASpeechContent = async (req: Request, res: Response) => {
+    try {
+        const response = await deleteASpeechContentService(req.params.id, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
 
 
 
