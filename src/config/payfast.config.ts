@@ -46,24 +46,24 @@ export const PAYFAST_CONFIG: PayFastConfig = {
 // ============================================
 
 export const CREDIT_PAYFAST_CONFIG: PayFastConfig = {
-  mode: process.env.PAYFAST_MODE as 'test' | 'live' || 'test',
-  merchantId: process.env.PAYFAST_MERCHANT_ID || '10050879',
-  merchantKey: process.env.PAYFAST_MERCHANT_KEY || 'y4jdud635c88g',
-  passphrase: process.env.PAYFAST_PASSPHRASE || '',
+  mode: (process.env.PAYFAST_MODE as "test" | "live") || "test",
+  merchantId: process.env.PAYFAST_MERCHANT_ID || "10050879",
+  merchantKey: process.env.PAYFAST_MERCHANT_KEY || "y4jdud635c88g",
+  passphrase: process.env.PAYFAST_PASSPHRASE || "",
 
   get paymentUrl(): string {
-    return this.mode === 'live'
-      ? 'https://www.payfast.co.za/eng/process'
-      : 'https://sandbox.payfast.co.za/eng/process';
+    return this.mode === "live"
+      ? "https://www.payfast.co.za/eng/process"
+      : "https://sandbox.payfast.co.za/eng/process";
   },
 
   get validateUrl(): string {
-    return this.mode === 'live'
-      ? 'https://www.payfast.co.za/eng/query/validate'
-      : 'https://sandbox.payfast.co.za/eng/query/validate';
+    return this.mode === "live"
+      ? "https://www.payfast.co.za/eng/query/validate"
+      : "https://sandbox.payfast.co.za/eng/query/validate";
   },
 
-  returnUrl: 'http://localhost:5173/user/credit-success',
-  cancelUrl: 'http://localhost:5173/user/credit-cancelled',
-  notifyUrl: 'http://localhost:8000/api/user/credit/payfast/notify',
+  returnUrl: `${process.env.FRONTEND_URL}/user/credit-success`,
+  cancelUrl: `${process.env.FRONTEND_URL}/user/credit-cancelled`,
+  notifyUrl: `${process.env.BASE_URL}/api/user/credit/payfast/notify`,
 };
