@@ -168,3 +168,63 @@ export const sendLatestUpdatesEmail = async (
     throw new Error('Failed to send update email');
   }
 };
+
+
+export const sendSupportEmailToAdmin = async (payload: {
+  name: string;
+  email: string;
+  organisation?: string;
+  subject: string;
+  message: string;
+}) => {
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.COMPANY_EMAIL || process.env.SMTP_USER,
+      to: "support@magalela.com", // or process.env.SUPPORT_EMAIL
+      replyTo: payload.email,
+      subject: `Support Request: ${payload.subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+          <h2>New Support Request</h2>
+
+          <table style="width:100%; border-collapse:collapse;">
+            <tr>
+              <td style="padding:10px; border:1px solid #ddd;"><strong>Name</strong></td>
+              <td style="padding:10px; border:1px solid #ddd;">${payload.name}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:10px; border:1px solid #ddd;"><strong>Email</strong></td>
+              <td style="padding:10px; border:1px solid #ddd;">${payload.email}</td>
+            </tr
+
+            <tr>
+              <td style="padding:10px; border:1px solid #ddd;"><strong>Organisation</strong></td>
+              <td style="padding:10px; border:1px solid #ddd;">${payload.organisation || "-"}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:10px; border:1px solid #ddd;"><strong>Subject</strong></td>
+              <td style="padding:10px; border:1px solid #ddd;">${payload.subject}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:10px; border:1px solid #ddd;"><strong>Message</strong></td>
+              <td style="padding:10px; border:1px solid #ddd;">${payload.message}</td>
+            </tr>
+          </table>
+
+          <p style="margin-top:20px;color:#777;">
+            Submitted on ${new Date().toLocaleString()}
+          </p>
+        </div>
+      `,
+    });
+
+    console.log("Support email sent:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending support email:", error);
+    throw new Error("Failed to send support email");
+  }
+};

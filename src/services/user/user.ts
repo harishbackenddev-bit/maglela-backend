@@ -4,7 +4,7 @@ import { usersModel } from "../../models/user/user-schema"
 import bcrypt from "bcryptjs"
 import { notificationsModel } from "../../models/notifications/notifications-schema";
 import { generatePasswordResetToken, generatePasswordResetTokenByPhone, getPasswordResetTokenByToken } from "../../utils/mails/token"
-import { sendPasswordResetEmail } from "../../utils/mails/mail"
+import { sendPasswordResetEmail, sendSupportEmailToAdmin } from "../../utils/mails/mail"
 import { generatePasswordResetTokenByPhoneWithTwilio } from "../../utils/sms/sms"
 import { httpStatusCode } from "../../lib/constant"
 import { customAlphabet } from "nanoid"
@@ -13,7 +13,7 @@ import { adminModel } from "src/models/admin/admin-schema";
 import { workshopModel } from "src/models/workshop/workshop-schema";
 import { projectModel } from "src/models/projects/project-schema";
 import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
-
+import { supportMessageModel } from "../../models/user/support-messages-schema";
 
 export const signupService = async (payload: any, res: Response) => {
   const emailExists = await usersModel.findOne({
@@ -477,7 +477,7 @@ export const createWorkshopService = async (
 export const getworkshopService = async (payload: any, res: Response) => {
   const userId = payload.userId;
   // console.log("userIdpayload", userId);
-  const user = await workshopModel.findOne({ userId });
+  const user = await workshopModel.find({ userId });
 
   return {
     success: true,
@@ -521,15 +521,16 @@ export const createProjectsService = async (
 
 
 export const getprojectsService = async (payload: any, res: Response) => {
-  const userId = payload.userId;
-  const project = await projectModel.findOne({ userId });
+  const { userId } = payload;
+
+  const projects = await projectModel.find({ userId });
 
   return {
     success: true,
-    message: "project fetched successfully",
-    data: project
+    message: "Projects fetched successfully",
+    data: projects
   };
-}
+};
 
 
 // Dashboard
@@ -564,28 +565,28 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
 // ============================================
 
 export const getAIwritingDataService = async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).currentUser;
+  try {
+    const userId = (req as any).currentUser;
 
-        const data = await aiContentModel.find({
-            userId: userId,
-            contentType: 'writing'
-        }).sort({ createdAt: -1 });
+    const data = await aiContentModel.find({
+      userId: userId,
+      contentType: 'writing'
+    }).sort({ createdAt: -1 });
 
-        return {
-            success: true,
-            message: "Writing data fetched successfully",
-            data: data
-        };
+    return {
+      success: true,
+      message: "Writing data fetched successfully",
+      data: data
+    };
 
-    } catch (error: any) {
-        console.error("Error fetching writing data:", error);
-        return errorResponseHandler(
-            error.message || "Failed to fetch writing data",
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            res
-        );
-    }
+  } catch (error: any) {
+    console.error("Error fetching writing data:", error);
+    return errorResponseHandler(
+      error.message || "Failed to fetch writing data",
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      res
+    );
+  }
 };
 
 // ============================================
@@ -593,81 +594,139 @@ export const getAIwritingDataService = async (req: Request, res: Response) => {
 // ============================================
 
 export const getAIspeechDataService = async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).currentUser;
+  try {
+    const userId = (req as any).currentUser;
 
-        const data = await aiContentModel.find({
-            userId: userId,
-            contentType: 'speech'
-        }).sort({ createdAt: -1 });
+    const data = await aiContentModel.find({
+      userId: userId,
+      contentType: 'speech'
+    }).sort({ createdAt: -1 });
 
-        return {
-            success: true,
-            message: "Speech data fetched successfully",
-            data: data
-        };
+    return {
+      success: true,
+      message: "Speech data fetched successfully",
+      data: data
+    };
 
-    } catch (error: any) {
-        console.error("Error fetching speech data:", error);
-        return errorResponseHandler(
-            error.message || "Failed to fetch speech data",
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            res
-        );
-    }
+  } catch (error: any) {
+    console.error("Error fetching speech data:", error);
+    return errorResponseHandler(
+      error.message || "Failed to fetch speech data",
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      res
+    );
+  }
 };
 
 
 export const deleteAWritingContentService = async (id: string, res: Response) => {
-    try {
-        const content = await aiContentModel.findById(id);
+  try {
+    const content = await aiContentModel.findById(id);
 
-        if (!content) {
-            return errorResponseHandler(
-                "Writing content not found",
-                httpStatusCode.NOT_FOUND,
-                res
-            );
-        }
-
-        await aiContentModel.findByIdAndDelete(id);
-
-        return {
-            success: true,
-            message: "Writing content deleted successfully",
-        };
-    } catch (error: any) {
-        return errorResponseHandler(
-            error.message || "Failed to delete writing content",
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            res
-        );
+    if (!content) {
+      return errorResponseHandler(
+        "Writing content not found",
+        httpStatusCode.NOT_FOUND,
+        res
+      );
     }
+
+    await aiContentModel.findByIdAndDelete(id);
+
+    return {
+      success: true,
+      message: "Writing content deleted successfully",
+    };
+  } catch (error: any) {
+    return errorResponseHandler(
+      error.message || "Failed to delete writing content",
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      res
+    );
+  }
 };
 
 export const deleteASpeechContentService = async (id: string, res: Response) => {
-    try {
-        const content = await aiContentModel.findById(id);
+  try {
+    const content = await aiContentModel.findById(id);
 
-        if (!content) {
-            return errorResponseHandler(
-                "Speech content not found",
-                httpStatusCode.NOT_FOUND,
-                res
-            );
-        }
-
-        await aiContentModel.findByIdAndDelete(id);
-
-        return {
-            success: true,
-            message: "Speech content deleted successfully",
-        };
-    } catch (error: any) {
-        return errorResponseHandler(
-            error.message || "Failed to delete speech content",
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            res
-        );
+    if (!content) {
+      return errorResponseHandler(
+        "Speech content not found",
+        httpStatusCode.NOT_FOUND,
+        res
+      );
     }
+
+    await aiContentModel.findByIdAndDelete(id);
+
+    return {
+      success: true,
+      message: "Speech content deleted successfully",
+    };
+  } catch (error: any) {
+    return errorResponseHandler(
+      error.message || "Failed to delete speech content",
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      res
+    );
+  }
+};
+
+
+
+export const createSupportMessageService = async (
+  payload: any,
+  res: Response
+) => {
+  try {
+    const { userId, body } = payload;
+
+    // Get logged-in user
+    const user = await usersModel.findById(userId);
+
+    if (!user) {
+      return {
+        success: false,
+        message: "User not found",
+        data: null,
+      };
+    }
+
+    // Create support message
+    const supportMessage = await supportMessageModel.create({
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      organisation: user.organisation,
+      profileType: user.profileType,
+      subject: body.subject,
+      message: body.message,
+    });
+
+
+    await sendSupportEmailToAdmin({
+      name: user.name,
+      email: user.email,
+      organisation: user.organisation,
+      subject: body.subject,
+      message: body.message,
+    });
+
+
+    return {
+      success: true,
+      message: "Support message sent successfully",
+      data: supportMessage,
+    };
+  } catch (error: any) {
+    console.error("Error creating support message:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to send support message",
+      data: null,
+    };
+  }
 };

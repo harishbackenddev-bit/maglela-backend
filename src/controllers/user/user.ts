@@ -6,7 +6,8 @@ import { formatZodErrors } from "../../validation/format-zod-errors"
 import { loginService, signupService,userdataServive, forgotPasswordService, verifyPasswordResetService,deleteAUserService,
      getDashboardStatsService, getUserInfoService, updateAUserService, updateAPasswordService, twoFactorAuthService,
     getNotificationPreferencesService, updateNotificationPreferencesService, createWorkshopService, getworkshopService,createProjectsService,
-    getprojectsService, getAIwritingDataService, getAIspeechDataService, deleteAWritingContentService, deleteASpeechContentService
+    getprojectsService, getAIwritingDataService, getAIspeechDataService, deleteAWritingContentService, deleteASpeechContentService,
+    createSupportMessageService
  } from "../../services/user/user"
 import { z } from "zod"
 import mongoose from "mongoose"
@@ -329,6 +330,15 @@ export const deleteASpeechContent = async (req: Request, res: Response) => {
 
 
 
-
+export const createSupportMessage = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).currentUser;
+    const response = await createSupportMessageService({userId,body: req.body,},res);
+    return res.status(httpStatusCode.CREATED).json(response);
+  } catch (error: any) {
+    const { code, message } = errorParser(error);
+    return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({success: false,message: message || "An error occurred",});
+  }
+};
 
 

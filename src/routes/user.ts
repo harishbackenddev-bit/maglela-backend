@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { login, signup, userdata, forgotPassword, getDashboardStats, deleteAUser, updateAUser, twoFactorAuth, profileupdate, getNotificationPreferences, updateNotificationPreferences, 
     updateAPassword, createWorkshop, getworkshop, createProjects, getprojects, documentUpload , getAIwritingData, getAIspeechData ,
-deleteAWritingContent,deleteASpeechContent
+deleteAWritingContent,deleteASpeechContent, createSupportMessage
 
 } from "../controllers/user/user";
 import { checkAuth } from "../middleware/check-auth";
@@ -14,8 +14,16 @@ import {
     getOrder,
     getUserOrders,
     downloadProduct,
-    cancelOrder
+    cancelOrder,
 } from "../controllers/payfast/payfast";
+
+import {
+  initiateCreditPayment,
+  handleCreditPaymentNotification,
+  getCreditOrderStatus,
+  getCreditOrder,
+  getUserCreditOrders,
+} from "../controllers/payfast/creditproduct";
 
 const router = Router();
 
@@ -45,6 +53,9 @@ router.route("/ai-writing/:id").delete(checkAuth, deleteAWritingContent)
 router.get("/ai-speech", checkAuth, getAIspeechData);
 router.route("/ai-speech/:id").delete(checkAuth, deleteASpeechContent)
 
+
+router.route("/contact/send-message").post(checkAuth, createSupportMessage)
+
 // ============================================
 // PAYFAST ORDER ROUTES
 // ============================================
@@ -69,5 +80,25 @@ router.get("/orders/user/:email", checkAuth, getUserOrders);
 router.get("/download/:orderNumber/:productId", downloadProduct);
 
 router.patch("/orders/:orderId/cancel", cancelOrder);
+
+
+
+// 1. Initiate Payment - Frontend calls this to start payment
+router.route("/credit/create-order").post(checkAuth, initiateCreditPayment)
+
+// 2. PayFast Webhook - PayFast calls this after payment
+router.post("/credit/payfast/notify", handleCreditPaymentNotification);
+
+// 3. Check Payment Status by order ID
+router.get("/credit/payments/status/:orderId", getCreditOrderStatus);
+
+// 4. Get Order by ID
+router.get("/credit/orders/:orderId", getCreditOrder);
+
+// 5. Get User Orders by email
+router.get("/credit/orders/user/:email", checkAuth, getUserCreditOrders);
+
+
+
 
 export { router };

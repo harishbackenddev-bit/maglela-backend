@@ -116,6 +116,50 @@ const usersSchema = new Schema(
       type: Boolean,
       default: false,
     },
+
+    // ============================================
+    // ✅ CREDITS & PLAN FIELDS (ONLY ESSENTIAL)
+    // ============================================
+    
+    // Current credit balance
+    credits: {
+      type: Number,
+      default: 0,
+    },
+
+    // Current plan type
+    plan: {
+      type: String,
+      enum: ['free', 'basic', 'pro', 'enterprise'],
+      default: 'free',
+    },
+
+    planType: {
+      type: String,
+      enum: ['free', 'basic', 'pro', 'enterprise'],
+      default: 'free',
+    },
+
+    // Last purchase details (for quick reference)
+    lastCreditPurchase: {
+      type: Date,
+      default: null,
+    },
+
+    lastPurchaseAmount: {
+      type: Number,
+      default: null,
+    },
+
+    lastPurchasePlan: {
+      type: String,
+      default: null,
+    },
+
+    lastPurchaseOrderNumber: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
