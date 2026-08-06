@@ -5,7 +5,7 @@ import { httpStatusCode } from "../../lib/constant";
 import { extractTextFromFile } from "../../utils/fileProcessor";
 import { aiGenerateService as aiGenerateCore } from "./aiGenerateService";
 import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
-
+import { usersModel } from "../../models/user/user-schema"; // ✅ Import user model
 
 // Main AI Generation Service
 export const aiGenerateService = async (payload: any, res: Response) => {
@@ -23,13 +23,25 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             return errorResponseHandler("Source document is required", httpStatusCode.BAD_REQUEST, res);
         }
 
+        // ✅ GET USER AND CHECK CREDITS
+        const user = await usersModel.findById(userId);
+        if (!user) {
+            return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+        }
+
+        // Get current credits (handle both field names)
+        let currentCredits = user.credits || 0;
         // Extract text from file
         const fileContent = await extractTextFromFile(file);
         if (!fileContent || fileContent.length < 50) {
-            return errorResponseHandler("File content is too short or unreadable", httpStatusCode.BAD_REQUEST, res);
+            return errorResponseHandler(
+                "File content is too short or unreadable",
+                httpStatusCode.BAD_REQUEST,
+                res
+            );
         }
 
-        // Generate document
+        // Generate document FIRST to get the cost
         const result = await aiGenerateCore({
             title,
             type,
@@ -39,8 +51,49 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             userId
         });
 
+        // ✅ CALCULATE CREDITS TO DEDUCT (cost * 5)
+        const zarCost = result.costEstimate?.zar || 0;
+        const creditsToDeduct = zarCost * 5; // ✅ Multiply by 5
 
-        // Save generated content
+        // Round to 2 decimal places
+        const roundedCredits = Math.round(creditsToDeduct * 100) / 100;
+
+        // // ✅ CHECK IF USER HAS ENOUGH CREDITS
+        // if (currentCredits < roundedCredits) {
+        //     return errorResponseHandler(
+        //         `Insufficient credits. You have ${currentCredits} credits, but need ${roundedCredits} credits (${zarCost} ZAR × 5) for this generation. Please top up your credits.`,
+        //         httpStatusCode.PAYMENT_REQUIRED,
+        //         res
+        //     );
+        // }
+
+        // ✅ DEDUCT CREDITS AFTER SUCCESSFUL GENERATION
+        let newCredits = currentCredits - roundedCredits;
+
+        try {
+            // Update user credits
+            const updatedUser = await usersModel.findByIdAndUpdate(
+                userId,
+                {
+                    $set: {
+                        credits: newCredits
+                    },
+                },
+                { new: true, runValidators: true }
+            );
+
+            if (!updatedUser) {
+                console.error(`❌ User not found during credit update: ${userId}`);
+            } else {
+                console.log(`✅ Credits deducted: ${roundedCredits} (${zarCost} ZAR × 5) from user ${userId}. New balance: ${newCredits}`);
+            }
+
+        } catch (dbError) {
+            console.error("Credit deduction error:", dbError);
+            // Log error but don't fail the request - generation already succeeded
+        }
+
+        // ✅ Save generated content with cost and credit info
         try {
             const newContent = new aiContentModel({
                 userId,
@@ -49,9 +102,13 @@ export const aiGenerateService = async (payload: any, res: Response) => {
                 description: `Document generated: ${title}`,
                 content: result.content,
                 provider: result.provider || "openai",
-                aiModel: result.modelUsed || "gpt-4o", // use modelName if your schema has it
+                aiModel: result.modelUsed || "gpt-4o",
                 charCount: result.wordCount || 0,
-                cost: result.costEstimate || { usd: 0, zar: 0 },
+                cost: {
+                    usd: result.costEstimate?.usd || 0,
+                    zar: zarCost,
+                    credits: roundedCredits // ✅ Track credits used
+                },
                 status: "Pending",
                 metadata: {
                     type,
@@ -63,18 +120,32 @@ export const aiGenerateService = async (payload: any, res: Response) => {
                     fileName: file.originalname,
                     fileType: file.mimetype,
                     generatedAt: new Date(),
+                    creditsUsed: roundedCredits, // ✅ Track credits used
+                    zarCost: zarCost,
+                    multiplier: 5
                 },
             });
 
             await newContent.save();
+            console.log(`✅ Document saved with ID: ${newContent._id}`);
         } catch (dbError) {
             console.error("Database save error:", dbError);
         }
 
+        // ✅ Return success with credit info
         return {
             success: true,
             message: "Document generated successfully",
-            data: result
+            data: {
+                ...result,
+                cost: {
+                    zar: zarCost,
+                    credits: roundedCredits
+                },
+                creditsUsed: roundedCredits,
+                creditsRemaining: newCredits,
+                multiplier: 5
+            }
         };
 
     } catch (error: any) {
@@ -86,7 +157,6 @@ export const aiGenerateService = async (payload: any, res: Response) => {
         );
     }
 };
-
 // Cost Estimates Service
 export const getCostEstimatesService = async (params: any, res: Response) => {
     try {
