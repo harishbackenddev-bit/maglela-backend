@@ -12,7 +12,6 @@ export interface AIModelConfig {
     description: string;
     costPerInputToken?: number;
     costPerOutputToken?: number;
-    costPerDraft?: number;
     costPerTask?: number;
     costPer1000Chars?: number;
     bestFor?: string;
@@ -20,62 +19,58 @@ export interface AIModelConfig {
 }
 
 // ============================================
-// ✅ AI MODELS CONFIGURATION WITH INDEX SIGNATURE
+// ✅ AI MODELS CONFIGURATION
 // ============================================
 
 export const AI_MODELS: Record<string, AIModelConfig> = {
     // ============================================
     // ANTHROPIC (CLAUDE) MODELS
     // ============================================
+    
+    // ✅ Claude Sonnet 4.6 - Full research drafts, voice calibration, policy briefs
     "claude-sonnet-4-6": {
         name: "Claude Sonnet 4.6",
         provider: "anthropic",
-        description: "Deep research drafts, long documents, voice matching",
-        costPerInputToken: 0.000003, // $3 per million input tokens
-        costPerOutputToken: 0.000015, // $15 per million output tokens
-        costPerDraft: 0.09, // ~R1.49 per draft
-        bestFor: "Final quality drafts",
+        description: "Deep research drafts, voice calibration, policy briefs",
+        costPerInputToken: 0.000003,   // $3 per million input tokens
+        costPerOutputToken: 0.000015,  // $15 per million output tokens
+        bestFor: "Full research drafts, voice calibration, policy briefs",
         voices: [],
     },
+    
+    // ✅ Claude Haiku 4.5 - Routing, sorting, simple extraction (background tasks)
     "claude-haiku-4-5": {
         name: "Claude Haiku 4.5",
         provider: "anthropic",
         description: "Fast, simple tasks — routing, tagging, extraction",
-        costPerInputToken: 0.000001, // $1 per million input tokens
-        costPerOutputToken: 0.000005, // $5 per million output tokens
-        costPerTask: 0.01, // ~R0.17 per task
-        bestFor: "Background processing",
-        voices: [],
-    },
-    "claude-opus-4-8": {
-        name: "Claude Opus 4.8",
-        provider: "anthropic",
-        description: "Most capable model for complex tasks",
-        costPerInputToken: 0.000015, // $15 per million input tokens
-        costPerOutputToken: 0.000075, // $75 per million output tokens
-        bestFor: "Most complex tasks",
+        costPerInputToken: 0.000001,   // $1 per million input tokens
+        costPerOutputToken: 0.000005,  // $5 per million output tokens
+        bestFor: "Routing, sorting, simple extraction (background tasks)",
         voices: [],
     },
 
     // ============================================
     // OPENAI MODELS
     // ============================================
+    
+    // ✅ GPT-4o - Summaries, classification, quick rewrites
     "gpt-4o": {
         name: "GPT-4o",
         provider: "openai",
         description: "Structured summaries, classification, reliable outputs",
-        costPerInputToken: 0.000005, // $5 per million input tokens
-        costPerOutputToken: 0.000015, // $15 per million output tokens
-        costPerTask: 0.05, // ~R0.83 per task
-        bestFor: "Quick summaries & sorting",
+        costPerInputToken: 0.000005,   // $5 per million input tokens
+        costPerOutputToken: 0.000015,  // $15 per million output tokens
+        bestFor: "Summaries, classification, quick rewrites",
         voices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
     },
+    
+    // ✅ GPT-4o Mini - Fast, cost-effective for simple tasks
     "gpt-4o-mini": {
         name: "GPT-4o Mini",
         provider: "openai",
         description: "Fast, cost-effective for simple tasks",
-        costPerInputToken: 0.00000015, // $0.15 per million input tokens
-        costPerOutputToken: 0.0000006, // $0.60 per million output tokens
+        costPerInputToken: 0.00000015,  // $0.15 per million input tokens
+        costPerOutputToken: 0.0000006,  // $0.60 per million output tokens
         bestFor: "Simple, high-volume tasks",
         voices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
     },
@@ -89,7 +84,6 @@ export const AI_MODELS: Record<string, AIModelConfig> = {
         description: "High-volume batch work at very low cost",
         costPerInputToken: 0.00000035, // $0.35 per million input tokens
         costPerOutputToken: 0.00000105, // $1.05 per million output tokens
-        costPerTask: 0.006, // ~R0.10 per task
         bestFor: "Bulk processing only",
         voices: [],
     },
@@ -125,7 +119,55 @@ export const AI_MODELS: Record<string, AIModelConfig> = {
 };
 
 // ============================================
-// ✅ TYPE-SAFE COST CALCULATION FUNCTIONS
+// ✅ SMART ROUTER DECISION MATRIX
+// ============================================
+
+export const SMART_ROUTER_MATRIX = {
+    // Task types and their best model
+    "policy-brief": {
+        recommended: ["claude-sonnet-4-6"],
+        description: "Full research drafts, policy briefs"
+    },
+    "impact-report": {
+        recommended: ["claude-sonnet-4-6"],
+        description: "Full research drafts, impact reports"
+    },
+    "speech": {
+        recommended: ["claude-sonnet-4-6", "gpt-4o"],
+        description: "Voice calibration, speeches"
+    },
+    "summary": {
+        recommended: ["gpt-4o", "gpt-4o-mini"],
+        description: "Summaries, quick rewrites"
+    },
+    "press-release": {
+        recommended: ["gpt-4o", "claude-sonnet-4-6"],
+        description: "Structured summaries, classification"
+    },
+    "blog-post": {
+        recommended: ["gpt-4o", "claude-sonnet-4-6"],
+        description: "Quick rewrites, blog posts"
+    },
+    "op-ed": {
+        recommended: ["claude-sonnet-4-6", "gpt-4o"],
+        description: "Full research drafts, op-eds"
+    },
+    "media-story": {
+        recommended: ["gpt-4o", "claude-sonnet-4-6"],
+        description: "Quick rewrites, media stories"
+    },
+    "routing": {
+        recommended: ["claude-haiku-4-5"],
+        description: "Routing, sorting, simple extraction"
+    },
+    "bulk-processing": {
+        recommended: ["google-gemini-flash", "claude-haiku-4-5"],
+        description: "High-volume batch work, background tasks"
+    },
+};
+
+// ============================================
+// ✅ COST CALCULATION FUNCTIONS
 // ============================================
 
 /**
@@ -144,17 +186,19 @@ export const calculateDraftCost = (
     outputTokens: number
 ): { usd: number; zar: number } => {
     const modelConfig = getModelConfig(model);
-    if (!modelConfig) {
-        return { usd: 0, zar: 0 };
-    }
 
-    const inputCost = (inputTokens / 1_000_000) * (modelConfig.costPerInputToken || 0);
-    const outputCost = (outputTokens / 1_000_000) * (modelConfig.costPerOutputToken || 0);
+    // costPerInputToken / costPerOutputToken are already $-per-single-token
+    // (e.g. 0.000005 = $5 / 1,000,000 tokens). Multiply directly — do NOT
+    // divide tokens by 1,000,000 first, or the cost underflows to ~0.
+    const rates = modelConfig || { costPerInputToken: 0.000003, costPerOutputToken: 0.000015 };
+
+    const inputCost = inputTokens * (rates.costPerInputToken || 0);
+    const outputCost = outputTokens * (rates.costPerOutputToken || 0);
     const totalUSD = inputCost + outputCost;
 
     return {
-        usd: parseFloat(totalUSD.toFixed(6)),
-        zar: parseFloat((totalUSD * EXCHANGE_RATE).toFixed(2)),
+        usd: totalUSD,          // keep full precision, don't toFixed here
+        zar: totalUSD * EXCHANGE_RATE,
     };
 };
 
@@ -200,8 +244,8 @@ export const getCostPerTask = (model: string): { usd: number; zar: number } => {
  */
 export const getModelRecommendations = (type: string): string[] => {
     const recommendations: Record<string, string[]> = {
-        'policy-brief': ['claude-sonnet-4-6', 'claude-opus-4-8'],
-        'impact-report': ['claude-sonnet-4-6', 'claude-opus-4-8'],
+        'policy-brief': ['claude-sonnet-4-6'],
+        'impact-report': ['claude-sonnet-4-6'],
         'speech': ['claude-sonnet-4-6', 'gpt-4o'],
         'summary': ['gpt-4o', 'gpt-4o-mini'],
         'press-release': ['gpt-4o', 'claude-sonnet-4-6'],
@@ -234,14 +278,12 @@ export const modelExists = (model: string): boolean => {
 // ============================================
 
 export const MODEL_MAPPING = {
-    // For writing
     writing: {
-        complex: ['claude-sonnet-4-6', 'claude-opus-4-8'],
+        complex: ['claude-sonnet-4-6'],
         balanced: ['gpt-4o', 'claude-sonnet-4-6'],
         simple: ['gpt-4o-mini', 'claude-haiku-4-5'],
         bulk: ['google-gemini-flash', 'claude-haiku-4-5'],
     },
-    // For speech
     speech: {
         highQuality: ['claude-sonnet-4-6', 'gpt-4o'],
         standard: ['gpt-4o', 'claude-sonnet-4-6'],
@@ -252,6 +294,7 @@ export const MODEL_MAPPING = {
 export default {
     AI_MODELS,
     EXCHANGE_RATE,
+    SMART_ROUTER_MATRIX,
     getModelConfig,
     calculateDraftCost,
     calculateSpeechCost,

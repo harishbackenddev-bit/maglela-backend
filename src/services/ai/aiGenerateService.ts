@@ -47,12 +47,11 @@ if (process.env.ANTHROPIC_API_KEY) {
 const isAIEnabled = !!(openai || anthropic);
 
 // ============================================
-// ✅ LATEST MODEL NAMES (March 2026)
+// ✅ LATEST MODEL NAMES
 // ============================================
 
 const ANTHROPIC_MODELS = {
     CLAUDE_SONNET_4_6: "claude-sonnet-4-6",
-    CLAUDE_OPUS_4_8: "claude-opus-4-8"
 };
 
 const OPENAI_MODELS = {
@@ -112,67 +111,31 @@ const smartRouter = (params: {
     const isComplexType = complexTypes.includes(type);
     const isSimpleType = simpleTypes.includes(type);
 
-    // ✅ Scoring - Initialize variables
+    // ✅ Scoring
     let claudeScore = 0;
     let openaiScore = 0;
 
     // Claude Sonnet 4.6 - Best for complex, high-quality content
-    if (isComplexType) {
-        claudeScore += 35;
-    }
-    if (contentLength > 5000) {
-        claudeScore += 20;
-    }
-    if (hasComplexTerms) {
-        claudeScore += 15;
-    }
-    if (hasTechnicalContent) {
-        claudeScore += 15;
-    }
-    if (tone === 'authoritative' || tone === 'formal') {
-        claudeScore += 10;
-    }
-    if (includeOutline) {
-        claudeScore += 10;
-    }
-    if (type === 'speech') {
-        claudeScore += 20;
-    }
-    if (type === 'policy-brief') {
-        claudeScore += 25;
-    }
-    if (type === 'impact-report') {
-        claudeScore += 20;
-    }
+    if (isComplexType) claudeScore += 35;
+    if (contentLength > 5000) claudeScore += 20;
+    if (hasComplexTerms) claudeScore += 15;
+    if (hasTechnicalContent) claudeScore += 15;
+    if (tone === 'authoritative' || tone === 'formal') claudeScore += 10;
+    if (includeOutline) claudeScore += 10;
+    if (type === 'speech') claudeScore += 20;
+    if (type === 'policy-brief') claudeScore += 25;
+    if (type === 'impact-report') claudeScore += 20;
 
     // GPT-4o - Best for summaries, structured tasks
-    if (isSimpleType) {
-        openaiScore += 30;
-    }
-    if (contentLength < 3000) {
-        openaiScore += 20;
-    }
-    if (type === 'summary') {
-        openaiScore += 30;
-    }
-    if (type === 'press-release') {
-        openaiScore += 20;
-    }
-    if (tone === 'neutral' || tone === 'accessible') {
-        openaiScore += 10;
-    }
-    if (!hasComplexTerms) {
-        openaiScore += 15;
-    }
-    if (hasData && !hasTechnicalContent) {
-        openaiScore += 10;
-    }
-    if (type === 'media-story') {
-        openaiScore += 15;
-    }
-    if (type === 'blog-post') {
-        openaiScore += 15;
-    }
+    if (isSimpleType) openaiScore += 30;
+    if (contentLength < 3000) openaiScore += 20;
+    if (type === 'summary') openaiScore += 30;
+    if (type === 'press-release') openaiScore += 20;
+    if (tone === 'neutral' || tone === 'accessible') openaiScore += 10;
+    if (!hasComplexTerms) openaiScore += 15;
+    if (hasData && !hasTechnicalContent) openaiScore += 10;
+    if (type === 'media-story') openaiScore += 15;
+    if (type === 'blog-post') openaiScore += 15;
 
     // ✅ Bulk processing - Use cheapest models
     if (isBulk) {
@@ -192,17 +155,6 @@ const smartRouter = (params: {
     if (claudeScore > openaiScore && anthropic) {
         let model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
         let reason = `Claude Sonnet 4.6 better suited for ${type} (score: ${claudeScore})`;
-        
-        if (contentLength > 10000 || type === 'policy-brief' || type === 'impact-report') {
-            model = ANTHROPIC_MODELS.CLAUDE_OPUS_4_8;
-            reason = `Claude Opus 4.8 better for complex ${type} (score: ${claudeScore})`;
-        }
-        
-        // ✅ Check if model exists
-        if (!modelExists(model)) {
-            model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
-            reason = `Fallback to Claude Sonnet 4.6 (${model} not available)`;
-        }
         
         return {
             provider: 'anthropic',
@@ -373,7 +325,7 @@ const generateWithOpenAI = async (
 };
 
 // ============================================
-// GENERATE WITH CLAUDE (Updated - No temperature)
+// GENERATE WITH CLAUDE
 // ============================================
 
 const generateWithClaude = async (
@@ -391,7 +343,6 @@ const generateWithClaude = async (
     const userPrompt = getUserPrompt(content, title, type, includeOutline);
 
     try {
-        // ✅ Try with latest Sonnet 4.6 first
         const response = await anthropic.messages.create({
             model: ANTHROPIC_MODELS.CLAUDE_SONNET_4_6,
             max_tokens: 4000,
@@ -411,38 +362,8 @@ const generateWithClaude = async (
     } catch (error: any) {
         console.error("Claude API Error:", error);
         
-        // ✅ Try fallback models
-        const fallbackModels = [
-            ANTHROPIC_MODELS.CLAUDE_OPUS_4_8,
-        ];
-        
-        for (const fallbackModel of fallbackModels) {
-            // ✅ Check if model exists
-            if (!modelExists(fallbackModel)) continue;
-            
-            try {
-                console.log(`⚠️ Trying fallback model: ${fallbackModel}`);
-                const fallbackResponse = await anthropic.messages.create({
-                    model: fallbackModel,
-                    max_tokens: 4000,
-                    system: systemPrompt,
-                    messages: [
-                        { role: "user", content: userPrompt },
-                    ],
-                });
-                const fallbackResult = fallbackResponse.content[0]?.type === "text" ? fallbackResponse.content[0].text : "";
-                if (fallbackResult) {
-                    console.log(`✅ Fallback successful with model: ${fallbackModel}`);
-                    return {
-                        content: fallbackResult,
-                        inputTokens: fallbackResponse.usage?.input_tokens || 0,
-                        outputTokens: fallbackResponse.usage?.output_tokens || 0,
-                    };
-                }
-            } catch (fallbackError) {
-                console.error(`❌ Fallback with ${fallbackModel} failed:`, fallbackError);
-            }
-        }
+        // ✅ No fallback models since we removed claude-opus-4-8
+        // Just throw the error
         
         if (error.status === 401) {
             throw new Error("Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY.");
@@ -452,20 +373,18 @@ const generateWithClaude = async (
 };
 
 // ============================================
-// MAIN GENERATION FUNCTION (WITH SMART ROUTER)
+// MAIN GENERATION FUNCTION
 // ============================================
 
 export const aiGenerateService = async (params: GenerateParams): Promise<GenerateResult> => {
     const { title, type, tone, includeOutline, fileContent, preferredModel } = params;
 
-    // Check if any AI service is available
     if (!isAIEnabled) {
         throw new Error(
             "No AI service is configured. Please set either OPENAI_API_KEY or ANTHROPIC_API_KEY in your .env file."
         );
     }
 
-    // ✅ SMART ROUTER DECISION
     const routerDecision = smartRouter({
         type,
         tone,
@@ -484,7 +403,6 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
     let outputTokens: number = 0;
 
     try {
-        // ✅ Use the router decision
         if (routerDecision.provider === 'openai' && openai) {
             provider = 'openai';
             modelUsed = routerDecision.model;
@@ -500,7 +418,6 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
             inputTokens = result.inputTokens;
             outputTokens = result.outputTokens;
         } else if (openai) {
-            // Fallback to OpenAI
             provider = 'openai';
             modelUsed = OPENAI_MODELS.GPT_4O;
             const result = await generateWithOpenAI(fileContent, title, type, tone, includeOutline);
@@ -508,7 +425,6 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
             inputTokens = result.inputTokens;
             outputTokens = result.outputTokens;
         } else if (anthropic) {
-            // Fallback to Claude
             provider = 'anthropic';
             modelUsed = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
             const result = await generateWithClaude(fileContent, title, type, tone, includeOutline);
@@ -519,7 +435,6 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
             throw new Error("No AI service available. Please check your API keys.");
         }
 
-        // Extract outline if requested
         let outline: string | undefined;
         if (includeOutline && content) {
             outline = extractOutline(content);
@@ -527,8 +442,17 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
 
         const wordCount = content.split(/\s+/).length;
 
-        // Calculate cost
+        // ✅ Calculate cost with model and tokens
+        console.log("💰 Calculating cost with:", {
+            model: modelUsed,
+            inputTokens,
+            outputTokens,
+            totalTokens: inputTokens + outputTokens
+        });
+        
         const cost = calculateDraftCost(modelUsed, inputTokens, outputTokens);
+        
+        console.log("💰 Cost calculated:", cost);
 
         return {
             content,
@@ -600,5 +524,4 @@ export const isAIReady = (): boolean => {
     return !!(openai || anthropic);
 };
 
-// ✅ Export smart router for testing
 export { smartRouter };
