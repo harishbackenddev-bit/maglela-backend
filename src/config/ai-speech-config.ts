@@ -11,6 +11,9 @@ interface SpeechModel {
 type SpeechProvider = Record<string, SpeechModel>;
 
 export const SPEECH_MODELS: Record<string, SpeechProvider> = {
+  // ============================================
+  // ✅ ONLY OPENAI TTS MODELS
+  // ============================================
   openai: {
     "tts-1": {
       name: "TTS-1",
@@ -26,50 +29,21 @@ export const SPEECH_MODELS: Record<string, SpeechProvider> = {
     },
   },
 
-  google: {
-    standard: {
-      name: "Standard",
-      description: "Standard neural voices",
-      costPerMillionChars: 4.0,
-      voices: [
-        "en-US-Neural2-A",
-        "en-US-Neural2-C",
-        "en-US-Neural2-D",
-      ],
+  // ============================================
+  // ✅ ONLY ANTHROPIC (CLAUDE) MODELS
+  // ============================================
+  anthropic: {
+    "claude-sonnet-4-6": {
+      name: "Claude Sonnet 4.6",
+      description: "Deep research drafts, voice calibration, policy briefs",
+      costPer1000Chars: 0.015,
+      voices: [],
     },
-
-    studio: {
-      name: "Studio",
-      description: "Studio quality voices",
-      costPerMillionChars: 16.0,
-      voices: [
-        "en-US-Studio-O",
-        "en-US-Studio-M",
-        "en-US-Studio-Q",
-      ],
-    },
-  },
-
-  elevenlabs: {
-    eleven_turbo_v2: {
-      name: "Eleven Turbo v2",
-      description: "Fast, high-quality TTS",
-      costPer1000Chars: 0.02,
-      voices: ["Sarah", "Daniel", "Lisa", "James"],
-    },
-
-    eleven_multilingual_v2: {
-      name: "Eleven Multilingual v2",
-      description: "High-quality multilingual TTS",
-      costPer1000Chars: 0.03,
-      voices: [
-        "Sarah",
-        "Daniel",
-        "Lisa",
-        "James",
-        "Emma",
-        "Oliver",
-      ],
+    "claude-haiku-4-5": {
+      name: "Claude Haiku 4.5",
+      description: "Fast, simple tasks — routing, tagging, extraction",
+      costPer1000Chars: 0.005,
+      voices: [],
     },
   },
 };
@@ -128,4 +102,12 @@ export const getModel = (
   model: string
 ): SpeechModel | null => {
   return SPEECH_MODELS[provider]?.[model] ?? null;
+};
+
+export const isProviderSupported = (provider: string): boolean => {
+  return provider === 'openai' || provider === 'anthropic';
+};
+
+export const getSupportedProviders = (): string[] => {
+  return ['openai', 'anthropic'];
 };

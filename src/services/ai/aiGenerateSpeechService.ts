@@ -1,7 +1,8 @@
 // services/ai/speech/aiGenerateSpeechService.ts
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import { calculateSpeechCost } from "../../config/ai-speech-config";
+import { calculateSpeechCost, isProviderSupported } from "../../config/ai-speech-config";
+import { calculateDraftCost, modelExists as checkModelExists } from "../../config/ai-cost-config";
 
 // ============================================
 // INITIALIZE CLIENTS
@@ -10,7 +11,7 @@ import { calculateSpeechCost } from "../../config/ai-speech-config";
 let openai: OpenAI | null = null;
 let anthropic: Anthropic | null = null;
 
-// Initialize OpenAI (Optional)
+// Initialize OpenAI
 if (process.env.OPENAI_API_KEY) {
     try {
         openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -22,10 +23,10 @@ if (process.env.OPENAI_API_KEY) {
     console.warn("⚠️ OPENAI_API_KEY not set. OpenAI speech services will not be available.");
 }
 
-// Initialize Anthropic (Optional)
+// Initialize Anthropic (Claude)
 if (process.env.ANTHROPIC_API_KEY) {
     try {
-        anthropic = new Anthropic({ 
+        anthropic = new Anthropic({
             apiKey: process.env.ANTHROPIC_API_KEY,
             defaultHeaders: {
                 'anthropic-version': '2023-06-01'
@@ -43,42 +44,21 @@ if (process.env.ANTHROPIC_API_KEY) {
 const isSpeechEnabled = !!(openai || anthropic);
 
 // ============================================
-// ✅ ANTHROPIC MODELS (Consistent with aiGenerateService)
+// ✅ MODEL NAMES
 // ============================================
 
 const ANTHROPIC_MODELS = {
-    // ✅ Latest Models (March 2026)
-    CLAUDE_SONNET_4_6: "claude-sonnet-4-6",      // ~R1.49 per draft
-    CLAUDE_OPUS_4_8: "claude-opus-4-8",          // Most capable
+    CLAUDE_SONNET_4_6: "claude-sonnet-4-6",
+    CLAUDE_OPUS_4_8: "claude-opus-4-8",
 };
 
 const OPENAI_MODELS = {
-    GPT_4O: "gpt-4o",                            // ~R0.83 per task
-    GPT_4O_MINI: "gpt-4o-mini",                  // Cheaper for simple tasks
+    GPT_4O: "gpt-4o",
+    GPT_4O_MINI: "gpt-4o-mini",
 };
 
 // ============================================
-// ✅ MODEL EXISTENCE CHECK
-// ============================================
-
-const modelExists = (model: string): boolean => {
-    // Check in Anthropic models
-    const anthropicModels = Object.values(ANTHROPIC_MODELS);
-    if (anthropicModels.includes(model)) return true;
-    
-    // Check in OpenAI models
-    const openaiModels = Object.values(OPENAI_MODELS);
-    if (openaiModels.includes(model)) return true;
-    
-    // Check in speech models (for TTS)
-    const speechModels = ["tts-1", "tts-1-hd"];
-    if (speechModels.includes(model)) return true;
-    
-    return false;
-};
-
-// ============================================
-// SMART ROUTER
+// ✅ SMART ROUTER
 // ============================================
 
 interface RouterDecision {
@@ -100,19 +80,24 @@ const smartRouter = (params: {
     preferredProvider?: 'openai' | 'anthropic';
     isBulk?: boolean;
 }): RouterDecision => {
-    const { 
-        title, 
-        authority, 
-        clarity, 
-        academicRigor, 
-        accessibility, 
-        narrativeDepth, 
+    const {
+        authority,
+        clarity,
+        academicRigor,
+        accessibility,
+        narrativeDepth,
         fileContent,
         recordingDuration,
         preferredProvider,
         isBulk
     } = params;
 
+    // ✅ Check if preferred provider is supported
+    if (preferredProvider && !isProviderSupported(preferredProvider)) {
+        console.warn(`⚠️ Provider ${preferredProvider} is not supported. Falling back to auto-selection.`);
+    }
+
+    // ✅ User explicitly requested OpenAI
     if (preferredProvider === 'openai' && openai) {
         return {
             provider: 'openai',
@@ -121,6 +106,8 @@ const smartRouter = (params: {
             confidence: 100
         };
     }
+
+    // ✅ User explicitly requested Anthropic (Claude)
     if (preferredProvider === 'anthropic' && anthropic) {
         return {
             provider: 'anthropic',
@@ -140,24 +127,24 @@ const smartRouter = (params: {
         };
     }
 
+    // ✅ Auto-selection logic
     let claudeScore = 0;
     let openaiScore = 0;
 
-    // Claude Sonnet 4.6 - Best for natural, narrative speech
+    // Claude - Best for narrative, authoritative speech
     if (authority > 70) claudeScore += 20;
     if (narrativeDepth > 70) claudeScore += 30;
     if (academicRigor > 70) claudeScore += 20;
     if (fileContent && fileContent.length > 5000) claudeScore += 15;
     if (recordingDuration && Number(recordingDuration) > 120) claudeScore += 15;
 
-    // GPT-4o - Best for clarity and accessibility
+    // OpenAI - Best for clarity and accessibility
     if (clarity > 70) openaiScore += 30;
     if (accessibility > 70) openaiScore += 20;
     if (authority < 50 && clarity > 70) openaiScore += 20;
     if (!fileContent || fileContent.length < 2000) openaiScore += 15;
     if (recordingDuration && Number(recordingDuration) < 60) openaiScore += 15;
 
-    // Combined metrics
     if (authority > 60 && narrativeDepth > 60) claudeScore += 15;
     if (clarity > 80 && accessibility > 80) openaiScore += 20;
     if (academicRigor > 60 && authority > 60) claudeScore += 15;
@@ -169,17 +156,17 @@ const smartRouter = (params: {
     if (claudeScore > openaiScore && anthropic) {
         let model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
         let reason = `Claude Sonnet 4.6 better for speech (Authority=${authority}, Narrative=${narrativeDepth})`;
-        
+
         if (academicRigor > 80 || authority > 80 || (fileContent && fileContent.length > 10000)) {
             model = ANTHROPIC_MODELS.CLAUDE_OPUS_4_8;
-            reason = `Claude Opus 4.8 better for complex speech (Authority=${authority}, Academic=${academicRigor})`;
+            reason = `Claude Opus 4.8 better for complex speech`;
         }
-        
-        if (!modelExists(model)) {
+
+        if (!checkModelExists(model)) {
             model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
-            reason = `Fallback to Claude Sonnet 4.6 (${model} not available)`;
+            reason = `Fallback to Claude Sonnet 4.6`;
         }
-        
+
         return {
             provider: 'anthropic',
             model: model,
@@ -189,12 +176,12 @@ const smartRouter = (params: {
     } else if (openaiScore > claudeScore && openai) {
         let model = OPENAI_MODELS.GPT_4O;
         let reason = `GPT-4o better for speech (Clarity=${clarity}, Accessibility=${accessibility})`;
-        
+
         if (isBulk || !fileContent || fileContent.length < 1000) {
             model = OPENAI_MODELS.GPT_4O_MINI;
-            reason = `GPT-4o Mini for simple speech (Clarity=${clarity})`;
+            reason = `GPT-4o Mini for simple speech`;
         }
-        
+
         return {
             provider: 'openai',
             model: model,
@@ -212,7 +199,7 @@ const smartRouter = (params: {
         return {
             provider: 'anthropic',
             model: ANTHROPIC_MODELS.CLAUDE_SONNET_4_6,
-            reason: 'Claude Sonnet 4.6 selected as fallback',
+            reason: 'Claude selected as fallback',
             confidence: 70
         };
     } else {
@@ -269,6 +256,11 @@ interface SpeechResult {
         model: string;
         reason: string;
         confidence: number;
+    };
+    tokensUsed?: {
+        input: number;
+        output: number;
+        total: number;
     };
 }
 
@@ -333,21 +325,21 @@ Generate the complete speech:`;
 
     try {
         console.log(`🤖 Generating speech with Claude model: ${modelToUse}`);
-        
+
         const response = await anthropic.messages.create({
             model: modelToUse,
             max_tokens: 2000,
             system: systemPrompt,
             messages: [
-                { 
-                    role: "user", 
-                    content: `Please generate a speech about "${title}" based on the analysis metrics.` 
+                {
+                    role: "user",
+                    content: `Please generate a speech about "${title}" based on the analysis metrics.`
                 },
             ],
         });
 
         const result = response.content[0]?.type === "text" ? response.content[0].text : "";
-        
+
         if (!result) {
             throw new Error("Failed to generate speech content with Claude");
         }
@@ -356,16 +348,14 @@ Generate the complete speech:`;
 
     } catch (error: any) {
         console.error("Claude API Error:", error);
-        
+
         if (error.status === 404 || error.message.includes("model")) {
-            const fallbackModels = [
-                ANTHROPIC_MODELS.CLAUDE_OPUS_4_8
-            ];
-            
+            const fallbackModels = [ANTHROPIC_MODELS.CLAUDE_OPUS_4_8];
+
             for (const fallbackModel of fallbackModels) {
                 if (fallbackModel === modelToUse) continue;
-                if (!modelExists(fallbackModel)) continue;
-                
+                if (!checkModelExists(fallbackModel)) continue;
+
                 try {
                     console.log(`⚠️ Trying fallback model: ${fallbackModel}`);
                     const fallbackResponse = await anthropic.messages.create({
@@ -373,9 +363,9 @@ Generate the complete speech:`;
                         max_tokens: 2000,
                         system: systemPrompt,
                         messages: [
-                            { 
-                                role: "user", 
-                                content: `Please generate a speech about "${title}" based on the analysis metrics.` 
+                            {
+                                role: "user",
+                                content: `Please generate a speech about "${title}" based on the analysis metrics.`
                             },
                         ],
                     });
@@ -388,7 +378,7 @@ Generate the complete speech:`;
                     console.error(`❌ Fallback with ${fallbackModel} failed:`, fallbackError);
                 }
             }
-            
+
             throw new Error("All Claude models failed. Please check your API key and available models.");
         }
         if (error.status === 401) {
@@ -466,7 +456,7 @@ Generate the complete speech:`;
         });
 
         const result = response.choices[0]?.message?.content || "";
-        
+
         if (!result) {
             throw new Error("Failed to generate speech content with OpenAI");
         }
@@ -480,10 +470,44 @@ Generate the complete speech:`;
 };
 
 // ============================================
-// GENERATE WITH OPENAI TTS
+// ✅ TTS CHUNKING (Fixes 4096 char limit)
 // ============================================
 
-const generateWithOpenAITTS = async (text: string): Promise<{ audioData: Buffer; duration: number; model: string; format: string; charCount: number; cost: any }> => {
+const MAX_TTS_CHARS = 4096;
+
+const splitTextForTTS = (text: string, maxChars: number = MAX_TTS_CHARS): string[] => {
+    const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [text];
+    const chunks: string[] = [];
+    let current = "";
+
+    for (const sentence of sentences) {
+        if ((current + sentence).length > maxChars) {
+            if (current) {
+                chunks.push(current.trim());
+                current = "";
+            }
+            if (sentence.length > maxChars) {
+                for (let i = 0; i < sentence.length; i += maxChars) {
+                    chunks.push(sentence.slice(i, i + maxChars).trim());
+                }
+            } else {
+                current = sentence;
+            }
+        } else {
+            current += sentence;
+        }
+    }
+    if (current.trim()) chunks.push(current.trim());
+
+    return chunks.filter((c) => c.length > 0);
+};
+
+// ============================================
+// ✅ GENERATE WITH OPENAI TTS (Chunked)
+// ============================================
+const generateWithOpenAITTS = async (
+    text: string
+): Promise<{ audioData: Buffer; duration: number; model: string; format: string; charCount: number; cost: any; tokensUsed: any }> => {
     if (!openai) {
         throw new Error("OpenAI client is not available for TTS. Please set OPENAI_API_KEY.");
     }
@@ -495,17 +519,41 @@ const generateWithOpenAITTS = async (text: string): Promise<{ audioData: Buffer;
     const model = "tts-1";
     const voice = "alloy";
 
-    const response = await openai.audio.speech.create({
-        model: model,
-        voice: voice,
-        input: text,
-        speed: 1.0,
-        response_format: "mp3",
-    });
+    const chunks = splitTextForTTS(text);
+    console.log(`🔊 TTS: splitting ${text.length} chars into ${chunks.length} chunk(s)`);
 
-    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    const audioBuffers: Buffer[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+        console.log(`🔊 TTS chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)`);
+        const response = await openai.audio.speech.create({
+            model: model,
+            voice: voice,
+            input: chunks[i],
+            speed: 1.0,
+            response_format: "mp3",
+        });
+        
+        // ✅ FIX: Properly convert ArrayBuffer to Buffer
+        const arrayBuffer = await response.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const buffer = Buffer.from(uint8Array.buffer, uint8Array.byteOffset, uint8Array.byteLength);
+        audioBuffers.push(buffer);
+    }
+
+    const totalLength = audioBuffers.reduce((sum, buf) => sum + buf.length, 0);
+    const audioBuffer = Buffer.alloc(totalLength);
+    let offset = 0;
+    for (const buf of audioBuffers) {
+        buf.copy(audioBuffer, offset);
+        offset += buf.length;
+    }
+
     const charCount = text.length;
-    const cost = calculateSpeechCost(model, charCount);
+
+    // ✅ Use calculateDraftCost (same as writing)
+    const inputTokens = Math.round(charCount / 4);
+    const outputTokens = 0;
+    const cost = calculateDraftCost(model, inputTokens, outputTokens);
 
     return {
         audioData: audioBuffer,
@@ -513,7 +561,12 @@ const generateWithOpenAITTS = async (text: string): Promise<{ audioData: Buffer;
         model: model,
         format: "mp3",
         charCount: charCount,
-        cost: cost
+        cost: cost,
+        tokensUsed: {
+            input: inputTokens,
+            output: outputTokens,
+            total: inputTokens + outputTokens
+        }
     };
 };
 
@@ -529,13 +582,13 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
         throw new Error("OpenAI TTS is required for speech output. Please set OPENAI_API_KEY.");
     }
 
-    const { 
-        title, 
-        authority, 
-        clarity, 
-        academicRigor, 
-        accessibility, 
-        narrativeDepth, 
+    const {
+        title,
+        authority,
+        clarity,
+        academicRigor,
+        accessibility,
+        narrativeDepth,
         fileContent,
         file,
         audio,
@@ -568,11 +621,10 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
 
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    const claudeCostPer1000 = 0.015;
-    const claudeCost = {
-        usd: parseFloat(((speechText.length / 1000) * claudeCostPer1000).toFixed(4)),
-        zar: parseFloat(((speechText.length / 1000) * claudeCostPer1000 * 16.6).toFixed(2))
-    };
+    // ✅ Calculate Claude cost using calculateDraftCost (same as writing)
+    const inputTokens = Math.round((speechText.length / 4) * 0.3);
+    const outputTokens = Math.round(speechText.length / 4);
+    const claudeCost = calculateDraftCost(routerDecision.model, inputTokens, outputTokens);
 
     const totalCost = {
         usd: parseFloat((claudeCost.usd + audioResult.cost.usd).toFixed(4)),
@@ -606,6 +658,11 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
             model: routerDecision.model,
             reason: routerDecision.reason,
             confidence: routerDecision.confidence
+        },
+        tokensUsed: {
+            input: inputTokens + audioResult.tokensUsed.input,
+            output: outputTokens + audioResult.tokensUsed.output,
+            total: inputTokens + outputTokens + audioResult.tokensUsed.input + audioResult.tokensUsed.output
         }
     };
 };
@@ -619,13 +676,13 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
         throw new Error("OpenAI is not available. Please set OPENAI_API_KEY.");
     }
 
-    const { 
-        title, 
-        authority, 
-        clarity, 
-        academicRigor, 
-        accessibility, 
-        narrativeDepth, 
+    const {
+        title,
+        authority,
+        clarity,
+        academicRigor,
+        accessibility,
+        narrativeDepth,
         fileContent,
         file,
         audio,
@@ -657,11 +714,10 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
 
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    const openAICostPer1000 = 0.015;
-    const openAICost = {
-        usd: parseFloat(((speechText.length / 1000) * openAICostPer1000).toFixed(4)),
-        zar: parseFloat(((speechText.length / 1000) * openAICostPer1000 * 16.6).toFixed(2))
-    };
+    // ✅ Calculate OpenAI cost using calculateDraftCost (same as writing)
+    const inputTokens = Math.round((speechText.length / 4) * 0.3);
+    const outputTokens = Math.round(speechText.length / 4);
+    const openAICost = calculateDraftCost(routerDecision.model, inputTokens, outputTokens);
 
     const totalCost = {
         usd: parseFloat((openAICost.usd + audioResult.cost.usd).toFixed(4)),
@@ -695,6 +751,11 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
             model: routerDecision.model,
             reason: routerDecision.reason,
             confidence: routerDecision.confidence
+        },
+        tokensUsed: {
+            input: inputTokens + audioResult.tokensUsed.input,
+            output: outputTokens + audioResult.tokensUsed.output,
+            total: inputTokens + outputTokens + audioResult.tokensUsed.input + audioResult.tokensUsed.output
         }
     };
 };
@@ -714,6 +775,11 @@ export const aiGenerateSpeechService = async (params: SpeechParams): Promise<Spe
         throw new Error(
             "No AI service is configured. Please set either OPENAI_API_KEY or ANTHROPIC_API_KEY in your .env file."
         );
+    }
+
+    // ✅ Validate provider
+    if (preferredProvider && !isProviderSupported(preferredProvider)) {
+        console.warn(`⚠️ Provider ${preferredProvider} is not supported. Using auto-selection.`);
     }
 
     const routerDecision = smartRouter({

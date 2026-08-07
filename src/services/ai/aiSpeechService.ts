@@ -2,10 +2,9 @@
 import { Response } from "express";
 import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
-import {
-    aiGenerateSpeechService
-} from "./aiGenerateSpeechService";
+import { aiGenerateSpeechService } from "./aiGenerateSpeechService";
 import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
+import { usersModel } from "../../models/user/user-schema";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -15,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ============================================
-// MAIN SPEECH GENERATION SERVICE (WITH AUTO-SAVE)
+// MAIN SPEECH GENERATION SERVICE (WITH CREDITS)
 // ============================================
 
 export const generateSpeechService = async (payload: any, res: Response) => {
@@ -33,28 +32,75 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             recordingDuration,
             userId,
             preferredProvider,
-            description, // Optional description for database
-            author // Optional author name
+            description,
+            author
         } = payload;
 
-        // Validate
+        console.log("🚀 Speech Generation Service Started");
+        console.log("📦 Payload received:", {
+            title,
+            authority,
+            clarity,
+            academicRigor,
+            accessibility,
+            narrativeDepth,
+            userId,
+            fileName: file?.originalname,
+            fileSize: file?.size,
+            recordingDuration
+        });
+
+        // ✅ Validate
         if (!title) {
-            return errorResponseHandler(
-                "Title is required",
-                httpStatusCode.BAD_REQUEST,
-                res
-            );
+            console.log("❌ Validation failed: Title is required");
+            return errorResponseHandler("Title is required", httpStatusCode.BAD_REQUEST, res);
         }
 
         if (!userId) {
+            console.log("❌ Validation failed: User ID is required");
+            return errorResponseHandler("User ID is required", httpStatusCode.BAD_REQUEST, res);
+        }
+
+        // ============================================
+        // ✅ GET USER AND CHECK CREDITS
+        // ============================================
+        console.log(`🔍 Fetching user with ID: ${userId}`);
+        const user = await usersModel.findById(userId);
+        if (!user) {
+            console.log("❌ User not found:", userId);
+            return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+        }
+
+        // Get current credits
+        let currentCredits = user.credits || 0;
+        console.log(`👤 User found: ${user.email}`);
+        console.log(`💰 Current credits: ${currentCredits}`);
+
+        // ✅ CHECK IF USER HAS ENOUGH CREDITS (MINIMUM 1 CREDIT)
+        if (currentCredits < 1) {
+            console.log(`❌ Insufficient credits: ${currentCredits} < 1`);
             return errorResponseHandler(
-                "User ID is required",
-                httpStatusCode.BAD_REQUEST,
+                "Insufficient credits. You need at least 1 credit to generate speech. Please top up your credits.",
+                httpStatusCode.PAYMENT_REQUIRED,
                 res
             );
         }
 
-        // Generate speech with AI
+        // ============================================
+        // ✅ GENERATE SPEECH
+        // ============================================
+        console.log("🤖 Generating speech with AI...");
+        console.log("📝 Generation params:", {
+            title,
+            authority,
+            clarity,
+            academicRigor,
+            accessibility,
+            narrativeDepth,
+            userId,
+            preferredProvider
+        });
+
         const result = await aiGenerateSpeechService({
             title,
             authority: authority || 0,
@@ -70,7 +116,107 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             preferredProvider
         });
 
-        // ✅ Save audio file and get URL
+        console.log("✅ Speech generated successfully");
+        console.log("📊 Generation result:", {
+            hasContent: !!result.text,
+            contentLength: result.text?.length || 0,
+            charCount: result.charCount,
+            provider: result.provider,
+            model: result.model,
+            cost: result.cost
+        });
+
+        // ============================================
+        // ✅ CREDIT DEDUCTION LOGIC (SAME AS WRITING)
+        // ============================================
+        
+        // ✅ Get ZAR cost from AI response
+        const zarCost = result.cost?.zar || 0;
+        
+        // ✅ Calculate credits to deduct (zarCost * 5)
+        let creditsToDeduct = zarCost * 5;
+        
+        // ✅ Force minimum deduction of 1 credit
+        if (creditsToDeduct < 1 && result.text && result.text.length > 0) {
+            creditsToDeduct = 1;
+            console.log(`💰 Minimum credit deduction applied: 1 credit (zarCost was ${zarCost})`);
+        }
+
+        // ✅ Round to 2 decimal places
+        const roundedCredits = Math.round(creditsToDeduct * 100) / 100;
+
+        console.log("💰 Credit calculation:");
+        console.log(`   - ZAR Cost: ${zarCost}`);
+        console.log(`   - Multiplier: 5`);
+        console.log(`   - Credits to deduct: ${zarCost} × 5 = ${creditsToDeduct}`);
+        console.log(`   - Rounded credits: ${roundedCredits}`);
+
+        // ✅ CHECK IF USER HAS ENOUGH CREDITS AFTER CALCULATION
+        if (currentCredits < roundedCredits) {
+            console.log(`❌ Insufficient credits: ${currentCredits} < ${roundedCredits}`);
+            return errorResponseHandler(
+                `Insufficient credits. You have ${currentCredits} credits, but need ${roundedCredits} credits for this generation. Please top up your credits.`,
+                httpStatusCode.PAYMENT_REQUIRED,
+                res
+            );
+        }
+
+        // ✅ DEDUCT CREDITS AFTER SUCCESSFUL GENERATION
+        let newCredits = currentCredits - roundedCredits;
+        console.log(`💳 Credits before deduction: ${currentCredits}`);
+        console.log(`💳 Credits after deduction: ${newCredits}`);
+        console.log(`💳 Difference: ${roundedCredits} credits`);
+
+        try {
+            console.log(`🔄 Updating user credits in database...`);
+            
+            const updatedUser = await usersModel.findByIdAndUpdate(
+                userId,
+                {
+                    $set: {
+                        credits: newCredits
+                    },
+                    $push: {
+                        creditHistory: {
+                            action: 'AI_SPEECH_GENERATION',
+                            amount: -roundedCredits,
+                            balance: newCredits,
+                            description: `AI Speech generation: "${title}" - Cost: ${roundedCredits} credits`,
+                            timestamp: new Date(),
+                            metadata: {
+                                title: title,
+                                zarCost: zarCost,
+                                multiplier: 5,
+                                creditsDeducted: roundedCredits,
+                                charCount: result.charCount || 0,
+                                duration: result.duration,
+                                modelUsed: result.model || 'unknown',
+                                provider: result.provider || 'unknown'
+                            }
+                        }
+                    }
+                },
+                { new: true, runValidators: true }
+            );
+
+            if (!updatedUser) {
+                console.error(`❌ User not found during credit update: ${userId}`);
+            } else {
+                console.log(`✅ Credits deducted successfully!`);
+                console.log(`   - User: ${updatedUser.email}`);
+                console.log(`   - Deducted: ${roundedCredits} credits`);
+                console.log(`   - New balance: ${updatedUser.credits}`);
+                console.log(`   - Previous balance: ${currentCredits}`);
+            }
+
+        } catch (dbError) {
+            console.error("❌ Credit deduction error:", dbError);
+            console.log("⚠️ Generation succeeded but credit deduction failed!");
+        }
+
+        // ============================================
+        // ✅ SAVE AUDIO FILE
+        // ============================================
         let audioUrl = "";
         try {
             audioUrl = await saveAudioFile(
@@ -107,10 +253,14 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
 
-        // ✅ AUTO-SAVE TO DATABASE
+        // ============================================
+        // ✅ SAVE TO DATABASE
+        // ============================================
         let savedContent = null;
         try {
-            // Check if content already exists with same title
+            console.log("💾 Saving generated content to database...");
+            
+            // Check if content already exists
             const existingContent = await aiContentModel.findOne({
                 userId,
                 title: title.trim(),
@@ -128,15 +278,21 @@ export const generateSpeechService = async (payload: any, res: Response) => {
                 existingContent.provider = result.provider;
                 existingContent.aiModel = result.model;
                 existingContent.charCount = result.charCount;
-                existingContent.cost = result.cost;
+                existingContent.cost = {
+                    usd: result.cost?.usd || 0,
+                    zar: zarCost
+                };
                 existingContent.metadata = {
                     ...existingContent.metadata,
                     inputMethod: payload.inputMethod || 'ai',
                     ...(file && { fileName: file.originalname }),
                     ...(recordingDuration && { recordingDuration: Number(recordingDuration) }),
-                    lastGeneratedAt: new Date().toISOString()
+                    lastGeneratedAt: new Date().toISOString(),
+                    creditsUsed: roundedCredits,
+                    zarCost: zarCost,
+                    multiplier: 5
                 };
-                existingContent.status = 'Pending'; // Reset status for admin review
+                existingContent.status = 'Pending';
 
                 await existingContent.save();
                 savedContent = existingContent;
@@ -155,16 +311,22 @@ export const generateSpeechService = async (payload: any, res: Response) => {
                     duration: formatDuration(result.duration),
                     audioUrl: audioUrl,
                     provider: result.provider,
-                    model: result.model,
+                    aiModel: result.model,
                     charCount: result.charCount,
-                    cost: result.cost,
+                    cost: {
+                        usd: result.cost?.usd || 0,
+                        zar: zarCost
+                    },
                     author: author || 'AI Assistant',
                     status: 'Pending',
                     metadata: {
                         inputMethod: payload.inputMethod || 'ai',
                         ...(file && { fileName: file.originalname }),
                         ...(recordingDuration && { recordingDuration: Number(recordingDuration) }),
-                        generatedAt: new Date().toISOString()
+                        generatedAt: new Date().toISOString(),
+                        creditsUsed: roundedCredits,
+                        zarCost: zarCost,
+                        multiplier: 5
                     }
                 });
 
@@ -175,10 +337,11 @@ export const generateSpeechService = async (payload: any, res: Response) => {
 
         } catch (dbError: any) {
             console.error("❌ Database save error:", dbError);
-            // Continue even if DB save fails - user can save manually later
         }
 
-        // Build response data
+        // ============================================
+        // ✅ BUILD RESPONSE
+        // ============================================
         const responseData: any = {
             audioUrl: audioUrl,
             duration: result.duration,
@@ -188,7 +351,13 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             model: result.model,
             charCount: result.charCount,
             text: result.text,
-            cost: result.cost,
+            cost: {
+                usd: result.cost?.usd || 0,
+                zar: zarCost,
+                credits: roundedCredits
+            },
+            creditsUsed: roundedCredits,
+            creditsRemaining: newCredits,
             analysis: result.analysis,
             metadata: {
                 title: title,
@@ -196,7 +365,6 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             }
         };
 
-        // Add database info if saved
         if (savedContent) {
             responseData.database = {
                 id: savedContent._id,
@@ -206,7 +374,6 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             };
         }
 
-        // Add optional fields if they exist
         if (file) {
             responseData.file = {
                 name: file.originalname || 'file_uploaded',
@@ -223,6 +390,15 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             responseData.recordingDuration = Number(recordingDuration);
         }
 
+        console.log("🎉 Speech generation completed successfully!");
+        console.log("📊 Final summary:", {
+            title,
+            creditsUsed: roundedCredits,
+            creditsRemaining: newCredits,
+            zarCost: zarCost,
+            multiplier: 5
+        });
+
         return {
             success: true,
             message: savedContent ? "Speech generated and saved successfully" : "Speech generated successfully",
@@ -230,7 +406,8 @@ export const generateSpeechService = async (payload: any, res: Response) => {
         };
 
     } catch (error: any) {
-        console.error("Speech generation error:", error);
+        console.error("❌ Speech generation error:", error);
+        console.error("❌ Error stack:", error.stack);
         return errorResponseHandler(
             error.message || "Failed to generate speech",
             httpStatusCode.INTERNAL_SERVER_ERROR,
@@ -243,6 +420,8 @@ export const generateSpeechService = async (payload: any, res: Response) => {
 // SAVE AUDIO FILE
 // ============================================
 
+// services/ai/speech/aiSpeechService.ts
+
 const saveAudioFile = async (
     audioData: Buffer,
     format: string,
@@ -252,19 +431,19 @@ const saveAudioFile = async (
         const projectRoot = path.resolve(__dirname, "../../..");
         const uploadDir = path.join(projectRoot, "public", "uploads", "audio");
 
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        // ✅ Use fs.promises for async operations
+        await fs.promises.mkdir(uploadDir, { recursive: true });
 
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2, 8);
         const filename = `speech_${userId}_${timestamp}_${random}.${format || 'mp3'}`;
         const filepath = path.join(uploadDir, filename);
 
-        // ✅ Convert Buffer to Uint8Array for TypeScript compatibility
+        // ✅ FIX: Convert Buffer to Uint8Array
         const uint8Array = new Uint8Array(audioData);
-        fs.writeFileSync(filepath, uint8Array);
+        await fs.promises.writeFile(filepath, uint8Array);
 
+        console.log(`✅ Audio file saved: ${filename}`);
         return `/uploads/audio/${filename}`;
 
     } catch (error) {
@@ -323,6 +502,7 @@ export const getCostEstimatesService = async (params: any, res: Response) => {
         };
 
     } catch (error: any) {
+        console.error("❌ Cost estimates error:", error);
         return errorResponseHandler(
             error.message || "Failed to get cost estimates",
             httpStatusCode.INTERNAL_SERVER_ERROR,
@@ -350,14 +530,7 @@ export const getAICostEstimatesService = async (params: any, res: Response) => {
                             description: "OpenAI generates speech content and converts to voice",
                             costPer1000Chars: 0.015 + 0.015,
                             costPer1000CharsZAR: Math.round((0.015 + 0.015) * exchangeRate * 100) / 100,
-                            bestFor: "All-in-one OpenAI solution",
-                            features: [
-                                "Generates speech content automatically",
-                                "Uses analysis metrics",
-                                "Natural language understanding",
-                                "Can include outlines",
-                                "Tone and style control"
-                            ]
+                            bestFor: "All-in-one OpenAI solution"
                         }
                     ]
                 },
@@ -370,14 +543,7 @@ export const getAICostEstimatesService = async (params: any, res: Response) => {
                             description: "Claude generates speech content, OpenAI TTS for voice",
                             costPer1000Chars: 0.015 + 0.015,
                             costPer1000CharsZAR: Math.round((0.015 + 0.015) * exchangeRate * 100) / 100,
-                            bestFor: "Claude's natural language generation with TTS",
-                            features: [
-                                "Generates speech content automatically",
-                                "Uses analysis metrics",
-                                "Superior natural language understanding",
-                                "Can include outlines",
-                                "Tone and style control"
-                            ]
+                            bestFor: "Claude's natural language generation with TTS"
                         }
                     ]
                 }
@@ -401,6 +567,7 @@ export const getAICostEstimatesService = async (params: any, res: Response) => {
         };
 
     } catch (error: any) {
+        console.error("❌ AI cost estimates error:", error);
         return errorResponseHandler(
             error.message || "Failed to get AI cost estimates",
             httpStatusCode.INTERNAL_SERVER_ERROR,

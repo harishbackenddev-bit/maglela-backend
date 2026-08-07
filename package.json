@@ -21,7 +21,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.5.4",
+    "@types/node": "^24.13.3",
     "@types/nodemailer": "^8.0.1",
     "@types/pdf-parse": "^1.1.5",
     "@types/prop-types": "^15.7.13",
