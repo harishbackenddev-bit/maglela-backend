@@ -1,16 +1,17 @@
 // routes/index.ts or routes/payfast.routes.ts
 import { Router } from "express";
-import { login, signup, userdata, forgotPassword, getDashboardStats, deleteAUser, updateAUser, twoFactorAuth, profileupdate, getNotificationPreferences, updateNotificationPreferences, 
-    updateAPassword, createWorkshop, getworkshop, createProjects, getprojects, documentUpload , getAIwritingData, getAIspeechData ,
-deleteAWritingContent,deleteASpeechContent, createSupportMessage
+import {
+    login, signup, userdata, forgotPassword, getDashboardStats, deleteAUser, updateAUser, twoFactorAuth, profileupdate, getNotificationPreferences, updateNotificationPreferences,
+    updateAPassword, createWorkshop, getworkshop, createProjects, getprojects, documentUpload, getAIwritingData, getAIspeechData,
+    deleteAWritingContent, deleteASpeechContent, createSupportMessage, getQuote, updateQuote, getInvoices
 
 } from "../controllers/user/user";
 import { checkAuth } from "../middleware/check-auth";
 import { uploadProfile, uploadDocument } from "../config/multerConfig";
-import { 
-    initiatePayment, 
-    handlePayfastNotification, 
-    getOrderPaymentStatus, 
+import {
+    initiatePayment,
+    handlePayfastNotification,
+    getOrderPaymentStatus,
     getOrder,
     getUserOrders,
     downloadProduct,
@@ -18,12 +19,23 @@ import {
 } from "../controllers/payfast/payfast";
 
 import {
-  initiateCreditPayment,
-  handleCreditPaymentNotification,
-  getCreditOrderStatus,
-  getCreditOrder,
-  getUserCreditOrders,
+    initiateCreditPayment,
+    handleCreditPaymentNotification,
+    getCreditOrderStatus,
+    getCreditOrder,
+    getUserCreditOrders,
 } from "../controllers/payfast/creditproduct";
+
+import {
+    getPlans
+} from "../controllers/admin/admin";
+
+
+import {
+    initiateInvoicePayment,
+    handleInvoicePaymentNotification,
+    getInvoiceOrder
+} from "../controllers/payfast/invoiceproduct";
 
 const router = Router();
 
@@ -45,6 +57,9 @@ router.route("/workshops").post(checkAuth, createWorkshop).get(checkAuth, getwor
 router.route("/projects").post(checkAuth, createProjects).get(checkAuth, getprojects);
 router.post("/upload-document", checkAuth, uploadDocument.single("document"), documentUpload);
 router.route("/workshops-guest").post(checkAuth, createWorkshop)
+router.route("/credit-plans").get(getPlans)
+
+
 
 router.get("/ai-writing", checkAuth, getAIwritingData);
 router.route("/ai-writing/:id").delete(checkAuth, deleteAWritingContent)
@@ -55,6 +70,12 @@ router.route("/ai-speech/:id").delete(checkAuth, deleteASpeechContent)
 
 
 router.route("/contact/send-message").post(checkAuth, createSupportMessage)
+
+router.route("/quotes").get(checkAuth, getQuote)
+router.route("/quotes/:id").put(checkAuth, updateQuote)
+
+router.route("/invoices").get(checkAuth, getInvoices)
+
 
 // ============================================
 // PAYFAST ORDER ROUTES
@@ -81,7 +102,7 @@ router.get("/download/:orderNumber/:productId", downloadProduct);
 
 router.patch("/orders/:orderId/cancel", cancelOrder);
 
-
+// -------------------------------------******************-------------------------------------------------
 
 // 1. Initiate Payment - Frontend calls this to start payment
 router.route("/credit/create-order").post(checkAuth, initiateCreditPayment)
@@ -98,7 +119,15 @@ router.get("/credit/orders/:orderId", getCreditOrder);
 // 5. Get User Orders by email
 router.get("/credit/orders/user/:email", checkAuth, getUserCreditOrders);
 
+// -------------------------------------******************-------------------------------------------------
 
+// 1. Initiate Payment - Frontend calls this to start payment
+router.route("/invoices/create-payment").post(checkAuth, initiateInvoicePayment)
 
+// 2. PayFast Webhook - PayFast calls this after payment
+router.post("/invoices/payfast/notify", handleInvoicePaymentNotification);
+
+// 4. Get Order by ID
+router.get("/invoices/orders/:orderId", getInvoiceOrder);
 
 export { router };

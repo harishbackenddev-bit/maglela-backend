@@ -1,6 +1,6 @@
 // utils/payfast.utils.ts
 import crypto from 'crypto';
-import { PAYFAST_CONFIG, CREDIT_PAYFAST_CONFIG } from '../config/payfast.config';
+import { PAYFAST_CONFIG, CREDIT_PAYFAST_CONFIG, INVOICE_PAYFAST_CONFIG } from '../config/payfast.config';
 
 // ============================================
 // PAYFAST SIGNATURE GENERATION - FIXED
@@ -182,9 +182,8 @@ export const preparePayFastData = (params: {
 }) => {
   const { amount, email, firstName, lastName, orderNumber, transactionId, items } = params;
 
-  const returnUrlWithRef = `${PAYFAST_CONFIG.returnUrl}${
-    PAYFAST_CONFIG.returnUrl.includes('?') ? '&' : '?'
-  }orderId=${encodeURIComponent(orderNumber)}`;
+  const returnUrlWithRef = `${PAYFAST_CONFIG.returnUrl}${PAYFAST_CONFIG.returnUrl.includes('?') ? '&' : '?'
+    }orderId=${encodeURIComponent(orderNumber)}`;
 
   const itemNames = items?.map(item => item.title).join(', ') || 'Digital Products';
 
@@ -234,9 +233,8 @@ export const preparePayFastDataCREDIT = (params: {
 }) => {
   const { amount, email, firstName, lastName, orderNumber, transactionId, items } = params;
 
-  const returnUrlWithRef = `${CREDIT_PAYFAST_CONFIG.returnUrl}${
-    CREDIT_PAYFAST_CONFIG.returnUrl.includes('?') ? '&' : '?'
-  }orderId=${encodeURIComponent(orderNumber)}`;
+  const returnUrlWithRef = `${CREDIT_PAYFAST_CONFIG.returnUrl}${CREDIT_PAYFAST_CONFIG.returnUrl.includes('?') ? '&' : '?'
+    }orderId=${encodeURIComponent(orderNumber)}`;
 
   const itemNames = items?.map(item => item.title).join(', ') || 'Digital Products';
 
@@ -270,6 +268,51 @@ export const preparePayFastDataCREDIT = (params: {
 };
 
 
+
+export const preparePayFastDataInvoice = (params: {
+  amount: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  orderNumber: string;
+  transactionId: string;
+  items?: Array<{ title: string }>;
+}) => {
+  const { amount, email, firstName, lastName, orderNumber, transactionId, items } = params;
+
+  const returnUrlWithRef = `${INVOICE_PAYFAST_CONFIG.returnUrl}${INVOICE_PAYFAST_CONFIG.returnUrl.includes('?') ? '&' : '?'
+    }orderId=${encodeURIComponent(orderNumber)}`;
+
+  const itemNames = items?.map(item => item.title).join(', ') || 'Digital Products';
+
+  const data: Record<string, string> = {
+    merchant_id: INVOICE_PAYFAST_CONFIG.merchantId,
+    merchant_key: INVOICE_PAYFAST_CONFIG.merchantKey,
+    return_url: returnUrlWithRef,
+    cancel_url: INVOICE_PAYFAST_CONFIG.cancelUrl,
+    notify_url: INVOICE_PAYFAST_CONFIG.notifyUrl,
+    name_first: firstName,
+    name_last: lastName,
+    email_address: email,
+    m_payment_id: transactionId,
+    amount: amount.toFixed(2),
+    item_name: `Invoice Number - ${orderNumber}`,
+    item_description: itemNames,
+    custom_str1: orderNumber,
+    custom_str2: transactionId,
+    custom_str3: 'credit-plan',
+    custom_str4: 'v1',
+    email_confirmation: '1',
+    confirmation_address: email,
+    payment_method: 'cc',
+  };
+
+  // ✅ Use checkout signature (specific field order + '+' encoding)
+  const signature = generateCheckoutSignature(data);
+  data.signature = signature;
+
+  return data;
+};
 
 // ============================================
 // PAYFAST ITN VALIDATION (server-to-server confirmation with PayFast)

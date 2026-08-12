@@ -3,12 +3,13 @@ import { httpStatusCode } from "../../lib/constant"
 import { errorParser } from "../../lib/errors/error-response-handler"
 import { clientSignupSchema, passswordResetSchema } from "../../validation/client-user"
 import { formatZodErrors } from "../../validation/format-zod-errors"
-import { loginService, signupService,userdataServive, forgotPasswordService, verifyPasswordResetService,deleteAUserService,
-     getDashboardStatsService, getUserInfoService, updateAUserService, updateAPasswordService, twoFactorAuthService,
-    getNotificationPreferencesService, updateNotificationPreferencesService, createWorkshopService, getworkshopService,createProjectsService,
+import {
+    loginService, signupService, userdataServive, forgotPasswordService, verifyPasswordResetService, deleteAUserService,
+    getDashboardStatsService, getUserInfoService, updateAUserService, updateAPasswordService, twoFactorAuthService,
+    getNotificationPreferencesService, updateNotificationPreferencesService, createWorkshopService, getworkshopService, createProjectsService,
     getprojectsService, getAIwritingDataService, getAIspeechDataService, deleteAWritingContentService, deleteASpeechContentService,
-    createSupportMessageService
- } from "../../services/user/user"
+    createSupportMessageService, getQuoteService, updateQuoteService, getInvoicesService
+} from "../../services/user/user"
 import { z } from "zod"
 import mongoose from "mongoose"
 
@@ -64,7 +65,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 }
 
 export const verifyPasswordReset = async (req: Request, res: Response) => {
-    
+
     try {
         const response = await verifyPasswordResetService(req.body, res)
         return res.status(httpStatusCode.OK).json(response)
@@ -162,50 +163,50 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
 }
 
 export const profileupdate = async (req: Request, res: Response) => {
-  try {
-    // Check if file was uploaded
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded',
-      });
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded',
+            });
+        }
+
+        // Cloudinary automatically uploads the file and provides the URL
+        // The file object will have Cloudinary-specific properties
+        const imageUrl = (req.file as any).path; // Cloudinary URL
+        const publicId = (req.file as any).filename; // Cloudinary public_id
+
+        // Return the Cloudinary URL
+        res.status(200).json({
+            success: true,
+            message: 'Profile image uploaded successfully',
+            imageUrl: imageUrl,
+            data: {
+                imageUrl: imageUrl,
+                publicId: publicId,
+            },
+        });
+    } catch (error: any) {
+        console.error('Profile upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload profile image',
+            error: error.message,
+        });
     }
-
-    // Cloudinary automatically uploads the file and provides the URL
-    // The file object will have Cloudinary-specific properties
-    const imageUrl = (req.file as any).path; // Cloudinary URL
-    const publicId = (req.file as any).filename; // Cloudinary public_id
-
-    // Return the Cloudinary URL
-    res.status(200).json({
-      success: true,
-      message: 'Profile image uploaded successfully',
-      imageUrl: imageUrl,
-      data: {
-        imageUrl: imageUrl,
-        publicId: publicId,
-      },
-    });
-  } catch (error: any) {
-    console.error('Profile upload error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload profile image',
-      error: error.message,
-    });
-  }
 };
 
 
 export const createWorkshop = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).currentUser;
-    const response = await createWorkshopService({userId,body: req.body,},res);
-    return res.status(httpStatusCode.OK).json(response);
-  } catch (error: any) {
-    const { code, message } = errorParser(error);
-    return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({success: false,message: message || "An error occurred",});
-  }
+    try {
+        const userId = (req as any).currentUser;
+        const response = await createWorkshopService({ userId, body: req.body, }, res);
+        return res.status(httpStatusCode.OK).json(response);
+    } catch (error: any) {
+        const { code, message } = errorParser(error);
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred", });
+    }
 };
 
 export const getworkshop = async (req: Request, res: Response) => {
@@ -221,14 +222,14 @@ export const getworkshop = async (req: Request, res: Response) => {
 
 
 export const createProjects = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).currentUser;
-    const response = await createProjectsService({userId,body: req.body,},res);
-    return res.status(httpStatusCode.CREATED).json(response);
-  } catch (error: any) {
-    const { code, message } = errorParser(error);
-    return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({success: false,message: message || "An error occurred",});
-  }
+    try {
+        const userId = (req as any).currentUser;
+        const response = await createProjectsService({ userId, body: req.body, }, res);
+        return res.status(httpStatusCode.CREATED).json(response);
+    } catch (error: any) {
+        const { code, message } = errorParser(error);
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred", });
+    }
 };
 
 export const getprojects = async (req: Request, res: Response) => {
@@ -244,33 +245,33 @@ export const getprojects = async (req: Request, res: Response) => {
 
 
 export const documentUpload = async (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No document uploaded",
-      });
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No document uploaded",
+            });
+        }
+
+        const fileUrl = (req.file as any).path.replace(/^public/, "");
+        const publicId = (req.file as any).filename;
+
+        return res.status(200).json({
+            success: true,
+            message: "Document uploaded successfully",
+            fileUrl,
+            data: {
+                fileUrl,
+                publicId,
+            },
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to upload document",
+            error: error.message,
+        });
     }
-
-    const fileUrl = (req.file as any).path.replace(/^public/, "");
-    const publicId = (req.file as any).filename;
-
-    return res.status(200).json({
-      success: true,
-      message: "Document uploaded successfully",
-      fileUrl,
-      data: {
-        fileUrl,
-        publicId,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to upload document",
-      error: error.message,
-    });
-  }
 };
 
 
@@ -331,14 +332,59 @@ export const deleteASpeechContent = async (req: Request, res: Response) => {
 
 
 export const createSupportMessage = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).currentUser;
-    const response = await createSupportMessageService({userId,body: req.body,},res);
-    return res.status(httpStatusCode.CREATED).json(response);
-  } catch (error: any) {
-    const { code, message } = errorParser(error);
-    return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({success: false,message: message || "An error occurred",});
-  }
+    try {
+        const userId = (req as any).currentUser;
+        const response = await createSupportMessageService({ userId, body: req.body, }, res);
+        return res.status(httpStatusCode.CREATED).json(response);
+    } catch (error: any) {
+        const { code, message } = errorParser(error);
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred", });
+    }
+};
+
+// ============================================
+// GET SINGLE QUOTE
+// ============================================
+
+
+export const getQuote = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+        const response = await getQuoteService({ userId, body: req.body, }, res);
+        return res.status(httpStatusCode.CREATED).json(response);
+    } catch (error: any) {
+        const { code, message } = errorParser(error);
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred", });
+    }
+};
+
+// ============================================
+// UPDATE QUOTE
+// ============================================
+export const updateQuote = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const result = await updateQuoteService(id, req.body, res);
+        res.status(result.success ? 200 : 400).json(result);
+    } catch (error: any) {
+        console.error("Error in updateQuote controller:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Internal server error",
+            data: null,
+        });
+    }
 };
 
 
+
+export const getInvoices = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+        const response = await getInvoicesService({ userId, body: req.body, }, res);
+        return res.status(httpStatusCode.CREATED).json(response);
+    } catch (error: any) {
+        const { code, message } = errorParser(error);
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred", });
+    }
+};

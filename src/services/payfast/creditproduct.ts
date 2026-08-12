@@ -8,7 +8,7 @@ import {
 import { planOrderModel } from "../../models/orders/plan_orders";
 import { CREDIT_PAYFAST_CONFIG } from "../../config/payfast.config";
 import { usersModel } from "../../models/user/user-schema"; // ✅ Import user model
-
+import { creditPlanModel } from "src/models/plans/plan-schema";
 
 // ============================================
 // PLAN DATA
@@ -70,13 +70,17 @@ const PLANS = {
 // ============================================
 // 1. INITIATE CREDIT PAYMENT SERVICE (NO TAX)
 // ============================================
+// services/payfast/credit.service.ts
+
 export const initiateCreditPaymentService = async (payload: any, req: Request, res: Response) => {
     try {
         const {
             userEmail,
             billingInfo,
             planId,
-            billingCycle = 'monthly'
+            billingCycle = 'monthly',
+            credits: providedCredits,
+            amount: providedAmount
         } = payload;
 
         // ✅ Validate required fields
@@ -95,18 +99,74 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Find plan
-        const plan = PLANS[planId as keyof typeof PLANS];
-        if (!plan) {
+        // ✅ Find user
+        const user = await usersModel.findOne({ email: userEmail });
+        if (!user) {
             return {
                 success: false,
-                message: "Plan not found",
+                message: "User not found",
             };
         }
 
-        // ✅ Get price based on billing cycle (NO TAX)
-        const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
-        const credits = billingCycle === 'monthly' ? plan.credits : plan.credits * 12;
+        // ✅ Get plan details from database
+        let planCredits = providedCredits || 0;
+        let planPrice = providedAmount || 0;
+        let planName = planId;
+        let planType = "basic";
+        let planFeatures: string[] = [];
+        let planData = null;
+
+        // If credits and amount are provided directly (from frontend), use them
+        if (providedCredits && providedAmount) {
+            planCredits = providedCredits;
+            planPrice = providedAmount;
+            
+            // Try to get the full plan data from database
+            const planFromDb = await creditPlanModel.findOne({
+                name: { $regex: new RegExp(`^${planId}$`, 'i') },
+                billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
+                isActive: true
+            });
+            
+            if (planFromDb) {
+                planName = planFromDb.name;
+                planFeatures = planFromDb.features || [];
+                planData = planFromDb;
+                
+                // Determine plan type from name
+                if (planName.toLowerCase().includes('pro')) {
+                    planType = 'pro';
+                } else if (planName.toLowerCase().includes('enterprise') || planName.toLowerCase().includes('organisation')) {
+                    planType = 'enterprise';
+                } else {
+                    planType = 'basic';
+                }
+            }
+        } else {
+            // Otherwise fetch from database
+            const planResult = await getPlanCredits(planId, billingCycle);
+            if (!planResult) {
+                return {
+                    success: false,
+                    message: "Plan not found or inactive",
+                };
+            }
+            
+            planCredits = planResult.credits;
+            planPrice = planResult.price;
+            planName = planResult.planName;
+            planData = planResult.plan;
+            planFeatures = planResult.plan?.features || [];
+            
+            // Determine plan type from name
+            if (planName.toLowerCase().includes('pro')) {
+                planType = 'pro';
+            } else if (planName.toLowerCase().includes('enterprise') || planName.toLowerCase().includes('organisation')) {
+                planType = 'enterprise';
+            } else {
+                planType = 'basic';
+            }
+        }
 
         // ✅ Generate order details
         const orderNumber = generateOrderNumber();
@@ -116,22 +176,23 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
         const order = new planOrderModel({
             orderNumber: orderNumber,
             userEmail: userEmail,
+            userId: user._id,
             orderType: 'plan',
 
             // Plan Details
-            planId: plan.id,
-            planName: plan.name,
-            planType: plan.type,
-            credits: credits,
-            price: price,
+            planId: planId,
+            planName: planName,
+            planType: planType,
+            credits: planCredits,
+            price: planPrice,
             billingCycle: billingCycle,
-            planFeatures: plan.features,
+            planFeatures: planFeatures,
 
             // Payment Details - NO TAX
-            subtotal: price,
+            subtotal: planPrice,
             taxAmount: 0, // ✅ No tax
             discountAmount: 0,
-            totalAmount: price, // ✅ Direct amount without tax
+            totalAmount: planPrice, // ✅ Direct amount without tax
             currency: 'ZAR',
             status: 'pending',
             paymentMethod: 'payfast',
@@ -154,10 +215,10 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
 
             // Credit Tracking
             creditDetails: {
-                creditsPurchased: credits,
-                creditsBefore: 0,
-                creditsAfter: 0,
-                remainingCredits: credits,
+                creditsPurchased: planCredits,
+                creditsBefore: user.credits || 0,
+                creditsAfter: (user.credits || 0) + planCredits,
+                remainingCredits: planCredits,
                 usedCredits: 0,
             },
 
@@ -166,7 +227,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 name: `${billingInfo.firstName} ${billingInfo.lastName}`,
                 email: billingInfo.email,
                 currentPlan: 'free',
-                currentCredits: 0,
+                currentCredits: user.credits || 0,
             },
 
             // Status History
@@ -187,9 +248,9 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
 
         await order.save();
 
-        // ✅ Prepare PayFast payment data - just pass the params object
+        // ✅ Prepare PayFast payment data
         const paymentData = preparePayFastDataCREDIT({
-            amount: price,
+            amount: planPrice,
             email: billingInfo.email,
             firstName: billingInfo.firstName,
             lastName: billingInfo.lastName,
@@ -206,9 +267,15 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 transactionId: transactionId,
                 orderNumber: orderNumber,
                 orderId: order._id,
-                amount: price, // ✅ Direct amount without tax
-                plan: plan,
-                credits: credits,
+                amount: planPrice, // ✅ Direct amount without tax
+                plan: {
+                    id: planId,
+                    name: planName,
+                    type: planType,
+                    credits: planCredits,
+                    features: planFeatures,
+                },
+                credits: planCredits,
                 billingCycle: billingCycle,
             },
         };
@@ -232,6 +299,48 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             message: error.message || 'Payment initiation failed',
             error: error.message,
         };
+    }
+};
+
+// Helper function to get plan credits from database
+const getPlanCredits = async (planId: string, billingCycle: string) => {
+    try {
+        // Try to find by name (case insensitive)
+        const plan = await creditPlanModel.findOne({
+            name: { $regex: new RegExp(`^${planId}$`, 'i') },
+            billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
+            isActive: true
+        });
+
+        if (plan) {
+            return {
+                credits: plan.credits,
+                price: plan.price,
+                planName: plan.name,
+                plan: plan
+            };
+        }
+
+        // Try to find by planId field
+        const planById = await creditPlanModel.findOne({
+            planId: planId,
+            billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
+            isActive: true
+        });
+
+        if (planById) {
+            return {
+                credits: planById.credits,
+                price: planById.price,
+                planName: planById.name,
+                plan: planById
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error("Error fetching plan credits:", error);
+        return null;
     }
 };
 

@@ -14,6 +14,8 @@ import { workshopModel } from "src/models/workshop/workshop-schema";
 import { projectModel } from "src/models/projects/project-schema";
 import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
 import { supportMessageModel } from "../../models/user/support-messages-schema";
+import { QuoteModel } from "../../models/invoice/quote-schema";
+import { InvoiceModel } from "../../models/invoice/invoice-schema";
 
 export const signupService = async (payload: any, res: Response) => {
   const emailExists = await usersModel.findOne({
@@ -726,6 +728,148 @@ export const createSupportMessageService = async (
     return {
       success: false,
       message: error.message || "Failed to send support message",
+      data: null,
+    };
+  }
+};
+
+export const getQuoteService = async (
+  payload: any,
+  res: Response
+) => {
+  try {
+    const { userId } = payload;
+
+    // Find user by ID
+    const user = await usersModel.findById(userId);
+
+    if (!user) {
+      return {
+        success: false,
+        message: "User not found",
+        data: null,
+      };
+    }
+
+    const userEmail = user.email;
+
+    // Find quote by client email
+    const quote = await QuoteModel.findOne({
+      "clientInfo.email": userEmail,
+    });
+
+    if (!quote) {
+      return {
+        success: false,
+        message: "Quote not found",
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Quote fetched successfully",
+      data: quote,
+    };
+  } catch (error: any) {
+    console.error("Error fetching quote:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to fetch quote",
+      data: null,
+    };
+  }
+};
+
+
+export const getInvoicesService = async (
+  payload: any,
+  res: Response
+) => {
+  try {
+    const { userId } = payload;
+
+    // Find user by ID
+    const user = await usersModel.findById(userId);
+
+    if (!user) {
+      return {
+        success: false,
+        message: "User not found",
+        data: null,
+      };
+    }
+
+    const userEmail = user.email;
+
+    // Find quote by client email
+    const quote = await InvoiceModel.findOne({
+      "clientInfo.email": userEmail,
+    });
+
+    if (!quote) {
+      return {
+        success: false,
+        message: "Invoice not found",
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Invoice fetched successfully",
+      data: quote,
+    };
+  } catch (error: any) {
+    console.error("Error fetching Invoice:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to fetch Invoice",
+      data: null,
+    };
+  }
+};
+
+
+
+export const updateQuoteService = async (id: string, body: any, res: Response) => {
+  try {
+    const quote = await QuoteModel.findById(id);
+    
+    if (!quote) {
+      return {
+        success: false,
+        message: "Quote not found",
+        data: null,
+      };
+    }
+
+    if (quote.status !== 'draft') {
+      return {
+        success: false,
+        message: `Cannot update quote in "${quote.status}" status`,
+        data: null,
+      };
+    }
+
+    const updatedQuote = await QuoteModel.findByIdAndUpdate(
+      id,
+      { $set: body },
+      { new: true, runValidators: true }
+    );
+
+    return {
+      success: true,
+      message: "Quote updated successfully",
+      data: updatedQuote,
+    };
+  } catch (error: any) {
+    console.error("Error updating quote:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update quote",
       data: null,
     };
   }

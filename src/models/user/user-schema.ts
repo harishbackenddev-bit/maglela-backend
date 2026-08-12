@@ -120,7 +120,7 @@ const usersSchema = new Schema(
     // ============================================
     // ✅ CREDITS & PLAN FIELDS (ONLY ESSENTIAL)
     // ============================================
-    
+
     // Current credit balance
     credits: {
       type: Number,
@@ -158,6 +158,10 @@ const usersSchema = new Schema(
 
     lastPurchaseOrderNumber: {
       type: String,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
       default: null,
     },
   },
