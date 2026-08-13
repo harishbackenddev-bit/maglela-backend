@@ -1626,19 +1626,22 @@ export const getSubscriptionPlansService = async (payload: any, res: Response) =
 };
 // services/admin/admin-service.ts
 
-export const createSubscriptionPlansService = async (payload: any, res: Response) => {
+export const createSubscriptionPlansService = async (
+  payload: any,
+  res: Response
+) => {
   try {
     // The payload might be nested - extract the actual data
     const data = payload.body || payload;
-    
+
     console.log("Creating plan with data:", data);
 
     // Check if plan with same name already exists
     if (data.name) {
-      const existingPlan = await subscriptionPlanModel.findOne({ 
-        name: data.name.trim() 
+      const existingPlan = await subscriptionPlanModel.findOne({
+        name: data.name.trim(),
       });
-      
+
       if (existingPlan) {
         return {
           success: false,
@@ -1657,17 +1660,64 @@ export const createSubscriptionPlansService = async (payload: any, res: Response
       };
     }
 
+    if (!data.tier || data.tier.trim() === "") {
+      return {
+        success: false,
+        message: "Plan tier is required",
+        data: null,
+      };
+    }
+
+    if (
+      data.monthlyPrice === undefined ||
+      data.monthlyPrice === null ||
+      data.monthlyPrice === ""
+    ) {
+      return {
+        success: false,
+        message: "Monthly price is required",
+        data: null,
+      };
+    }
+
     // Create new plan with proper data
     const planData = {
+      tier: data.tier.trim(),
+
       name: data.name.trim(),
+
+      audience: data.audience || "",
+      targetAudience: data.targetAudience || "",
+
+      monthlyPrice: Number(data.monthlyPrice) || 0,
+      yearlyPrice: Number(data.yearlyPrice) || 0,
+
+      creditsMonthly: Number(data.creditsMonthly) || 0,
+      creditsYearly: Number(data.creditsYearly) || 0,
+
+      periodLabel: data.periodLabel || "",
+      buttonLabel: data.buttonLabel || "",
+      buttonLink: data.buttonLink || "",
+
       billingType: data.billingType || "One-time",
+
       credits: Number(data.credits) || 0,
       price: Number(data.price) || 0,
+
       description: data.description || "",
-      features: Array.isArray(data.features) ? data.features : [],
+
+      features: Array.isArray(data.features)
+        ? data.features
+        : [],
+
       accentColor: data.accentColor || "#4f6ef7",
+
       isPopular: Boolean(data.isPopular),
-      isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+
+      isActive:
+        data.isActive !== undefined
+          ? Boolean(data.isActive)
+          : true,
     };
 
     console.log("Plan data to save:", planData);
@@ -1681,6 +1731,7 @@ export const createSubscriptionPlansService = async (payload: any, res: Response
     };
   } catch (error: any) {
     console.error("Error creating plan:", error);
+
     return {
       success: false,
       message: error.message || "Failed to create plan",
