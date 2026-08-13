@@ -19,7 +19,7 @@ import { InvoiceModel } from "../../models/invoice/invoice-schema";
 import { QuoteModel } from "../../models/invoice/quote-schema";
 import { planOrderModel } from "../../models/orders/plan_orders";
 import { invoiceOrderModel } from "../../models/orders/invoice_orders";
-
+import { clientsModel } from "../../models/user/client-schema";
 
 export const loginService = async (payload: any, res: Response) => {
     const { username, password } = payload;
@@ -174,9 +174,8 @@ export const getAUserService = async (id: string, res: Response) => {
 
 export const updateAUserService = async (id: string, payload: any, res: Response) => {
     const user = await usersModel.findById(id);
+
     if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
-    const countryCode = "+45";
-    payload.phoneNumber = `${countryCode}${payload.phoneNumber}`;
     const updateduser = await usersModel.findByIdAndUpdate(id, { ...payload }, { new: true });
 
     return {
@@ -189,40 +188,80 @@ export const updateAUserService = async (id: string, payload: any, res: Response
 
 
 export const deleteAUserService = async (id: string, res: Response) => {
-    // const user = await usersModel.findById(id);
-    // if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+    const user = await usersModel.findById(id);
+    if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
 
-    // // Delete user projects ----
-    // const userProjects = await projectsModel.deleteMany({ userId: id })
+    // Delete user projects ----
+    const userProjects = await projectModel.deleteMany({ userId: id })
+    const workshops = await workshopModel.deleteMany({ userId: id })
+    // Delete user ----
+    await usersModel.findByIdAndDelete(id)
 
-    // // Delete user ----
-    // await usersModel.findByIdAndDelete(id)
-
-    // return {
-    //     success: true,
-    //     message: "User deleted successfully",
-    //     data: {
-    //         user,
-    //         projects: userProjects
-    //     }
-    // }
+    return {
+        success: true,
+        message: "User deleted successfully"
+    }
 }
 
 
 
-export const updateAProfileService = async (payload: any, res: Response) => {
-  const userId = payload.userId;
-  const body = payload.body;
-  // console.log("userIdpayload", userId);
-  // console.log("bodypayload", body);
-  const user = await adminModel.findById(userId);
-  if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
-  const updateduser = await adminModel.findByIdAndUpdate(userId, { ...body }, { new: true });
-  return {
-    success: true,
-    message: "User data retrieved successfully",
-    data: updateduser
-  };
+export const updateAProfileService = async (
+  payload: any,
+  res: Response
+) => {
+  try {
+    const userId = payload.userId;
+    const body = payload.body;
+
+    // First check Admin
+    let user = await adminModel.findById(userId);
+
+    if (user) {
+      const updatedUser = await adminModel.findByIdAndUpdate(
+        userId,
+        { $set: body },
+        { new: true, runValidators: true }
+      );
+
+      return {
+        success: true,
+        message: "Profile updated successfully",
+        data: updatedUser,
+      };
+    }
+
+    // If not admin, check normal User
+    user = await usersModel.findById(userId);
+
+    if (user) {
+      const updatedUser = await usersModel.findByIdAndUpdate(
+        userId,
+        { $set: body },
+        { new: true, runValidators: true }
+      );
+
+      return {
+        success: true,
+        message: "Profile updated successfully",
+        data: updatedUser,
+      };
+    }
+
+    // Not found in either collection
+    return errorResponseHandler(
+      "User not found",
+      httpStatusCode.NOT_FOUND,
+      res
+    );
+  } catch (error: any) {
+    console.error("Error updating profile:", error);
+
+    return errorResponseHandler(
+      error.message || "Failed to update profile",
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      res
+    );
+  }
 };
 
 export const updateAPasswordService = async (payload: any, res: Response) => {
@@ -1856,6 +1895,386 @@ export const deleteASubscriptionPlansService = async (id: string, res: Response)
       success: false,
       message: error.message || "Failed to delete plan",
       data: null,
+    };
+  }
+};
+
+
+
+// ============================================
+// ✅ GET ALL CLIENTS
+// ============================================
+
+export const getAllClientsService = async (payload: any, res: Response) => {
+  try {
+    const { isActive, retainerType, search, managedBy } = payload.query || {};
+
+    let query: any = {};
+
+    // Filter by status
+    if (isActive !== undefined) {
+      query.isActive = isActive === 'true';
+    }
+
+    // Filter by retainer type
+    if (retainerType) {
+      query.retainerType = retainerType;
+    }
+
+    // Filter by manager
+    if (managedBy) {
+      query.managedBy = managedBy;
+    }
+
+    // Search by name or email
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const clients = await clientsModel
+      .find(query)
+      .populate('createdBy', 'name email')
+      .populate('managedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    return {
+      success: true,
+      message: "Clients fetched successfully",
+      data: clients,
+      count: clients.length
+    };
+  } catch (error: any) {
+    console.error("Error fetching clients:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch clients",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ GET SINGLE CLIENT
+// ============================================
+
+export const getClientByIdService = async (id: string, res: Response) => {
+  try {
+    const client = await clientsModel
+      .findById(id)
+      .populate('createdBy', 'name email')
+      .populate('managedBy', 'name email');
+
+    if (!client) {
+      return {
+        success: false,
+        message: "Client not found",
+        data: null
+      };
+    }
+
+    return {
+      success: true,
+      message: "Client fetched successfully",
+      data: client
+    };
+  } catch (error: any) {
+    console.error("Error fetching client:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch client",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ CREATE CLIENT
+// ============================================
+
+export const createClientService = async (payload: any, res: Response) => {
+  try {
+    const { body, userId } = payload;
+
+    console.log("Create client payload:", body);
+
+    // Validate required fields
+    if (!body.name || !body.email) {
+      return {
+        success: false,
+        message: "Name and email are required",
+        data: null
+      };
+    }
+
+    // Check if client with same email already exists
+    if (body.email) {
+      const existingClient = await clientsModel.findOne({
+        email: body.email.toLowerCase()
+      });
+
+      if (existingClient) {
+        return {
+          success: false,
+          message: "A client with this email already exists",
+          data: null
+        };
+      }
+    }
+
+    // Create client
+    const client = await clientsModel.create({
+      name: body.name,
+      email: body.email.toLowerCase(),
+      accountType: body.accountType || 'institutional',
+      userType: body.userType || 'enterprise',
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      projects: body.projects || 0,
+      lifetimeValue: body.lifetimeValue || 0,
+      retainerType: body.retainerType || null,
+      notes: body.notes || null,
+      createdBy: userId,
+      managedBy: body.managedBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    return {
+      success: true,
+      message: "Client created successfully",
+      data: client
+    };
+  } catch (error: any) {
+    console.error("Error creating client:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to create client",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ UPDATE CLIENT
+// ============================================
+
+export const updateClientService = async (id: string, body: any, res: Response) => {
+  try {
+    // Check if client exists
+    const existingClient = await clientsModel.findById(id);
+    
+    if (!existingClient) {
+      return {
+        success: false,
+        message: "Client not found",
+        data: null
+      };
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (body.email && body.email !== existingClient.email) {
+      const emailExists = await clientsModel.findOne({ 
+        email: body.email.toLowerCase(),
+        _id: { $ne: id }
+      });
+      
+      if (emailExists) {
+        return {
+          success: false,
+          message: "Email is already taken by another client",
+          data: null
+        };
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date()
+    };
+
+    // Only update fields that are provided
+    if (body.name) updateData.name = body.name;
+    if (body.email) updateData.email = body.email.toLowerCase();
+    if (body.accountType) updateData.accountType = body.accountType;
+    if (body.userType) updateData.userType = body.userType;
+    if (body.isActive !== undefined) updateData.isActive = body.isActive;
+    if (body.projects !== undefined) updateData.projects = body.projects;
+    if (body.lifetimeValue !== undefined) updateData.lifetimeValue = body.lifetimeValue;
+    if (body.retainerType !== undefined) updateData.retainerType = body.retainerType;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.managedBy !== undefined) updateData.managedBy = body.managedBy;
+
+    // Update client
+    const client = await clientsModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    return {
+      success: true,
+      message: "Client updated successfully",
+      data: client
+    };
+  } catch (error: any) {
+    console.error("Error updating client:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update client",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ DELETE CLIENT
+// ============================================
+
+export const deleteClientService = async (id: string, res: Response) => {
+  try {
+    const client = await clientsModel.findById(id);
+    
+    if (!client) {
+      return {
+        success: false,
+        message: "Client not found",
+        data: null
+      };
+    }
+
+    // Delete client
+    await clientsModel.findByIdAndDelete(id);
+
+    return {
+      success: true,
+      message: "Client deleted successfully",
+      data: null
+    };
+  } catch (error: any) {
+    console.error("Error deleting client:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to delete client",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ TOGGLE CLIENT STATUS
+// ============================================
+
+export const toggleClientStatusService = async (id: string, body: any, res: Response) => {
+  try {
+    const { isActive } = body;
+
+    if (isActive === undefined) {
+      return {
+        success: false,
+        message: "isActive field is required",
+        data: null
+      };
+    }
+
+    const client = await clientsModel.findById(id);
+
+    if (!client) {
+      return {
+        success: false,
+        message: "Client not found",
+        data: null
+      };
+    }
+
+    client.isActive = isActive;
+    client.updatedAt = new Date();
+    await client.save();
+
+    return {
+      success: true,
+      message: `Client ${isActive ? 'activated' : 'suspended'} successfully`,
+      data: client
+    };
+  } catch (error: any) {
+    console.error("Error toggling client status:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to toggle client status",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ GET CLIENTS BY MANAGER
+// ============================================
+
+export const getClientsByManagerService = async (managerId: string, res: Response) => {
+  try {
+    const clients = await clientsModel
+      .find({ managedBy: managerId })
+      .populate('createdBy', 'name email')
+      .populate('managedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    return {
+      success: true,
+      message: "Clients fetched successfully",
+      data: clients,
+      count: clients.length
+    };
+  } catch (error: any) {
+    console.error("Error fetching clients by manager:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch clients",
+      data: null
+    };
+  }
+};
+
+// ============================================
+// ✅ GET CLIENTS STATS
+// ============================================
+
+export const getClientsStatsService = async (res: Response) => {
+  try {
+    const totalClients = await clientsModel.countDocuments();
+    const activeClients = await clientsModel.countDocuments({ isActive: true });
+    const inactiveClients = await clientsModel.countDocuments({ isActive: false });
+
+    // Get retainer type distribution
+    const retainerDistribution = await clientsModel.aggregate([
+      { $group: { _id: '$retainerType', count: { $sum: 1 } } }
+    ]);
+
+    // Get total lifetime value
+    const totalLifetimeValue = await clientsModel.aggregate([
+      { $group: { _id: null, total: { $sum: '$lifetimeValue' } } }
+    ]);
+
+    return {
+      success: true,
+      message: "Client stats fetched successfully",
+      data: {
+        total: totalClients,
+        active: activeClients,
+        inactive: inactiveClients,
+        retainerDistribution,
+        totalLifetimeValue: totalLifetimeValue[0]?.total || 0
+      }
+    };
+  } catch (error: any) {
+    console.error("Error fetching client stats:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch client stats",
+      data: null
     };
   }
 };

@@ -3,7 +3,8 @@ import {
   getDashboardStats, getExperts, updateAExperts, createExperts, deleteAExperts, updateProfile, getAllUsers,
   getAllworkshop, updateAworkshop, getAworkshop, updateAPassword, getAllprojects, getAproject, updateAproject,
   getPlans, createPlans, deleteAPlans, updateAPlans, createSubscriptionPlans, updateASubscriptionPlans, deleteASubscriptionPlans,
-  getSubscriptionPlans, getNotifications
+  getSubscriptionPlans, getNotifications, updateAUser, deleteAUser, getAllClient, createClient, updateAClient, deleteAClient
+
 } from "../controllers/admin/admin";
 import { upload } from "../config/multer";
 import { checkMulter } from "../lib/errors/error-response-handler"
@@ -40,7 +41,8 @@ import {
     getTodayEvents,
     getAvailability,
     createOrUpdateAvailability,
-    getAvailabilityByUser
+    getAvailabilityByUser,
+    getallAvailabilities
 } from '../controllers/admin/schedule/schedule';
 
 const router = Router();
@@ -59,6 +61,13 @@ router.route("/projects/:id").put(checkAuth, updateAproject).get(checkAuth, getA
 
 
 router.route("/users").get(getAllUsers)
+router.route("/users/:id").patch(checkAuth, updateAUser).delete(checkAuth, deleteAUser)
+
+
+router.route("/clients").get(getAllClient).post(checkAuth, createClient)
+router.route("/clients/:id").patch(checkAuth, updateAClient).delete(checkAuth, deleteAClient)
+
+
 
 router.route("/plans").get(getPlans).post(checkAuth, createPlans)
 router.route("/plans/:id").patch(checkAuth, updateAPlans).delete(checkAuth, deleteAPlans)
@@ -134,7 +143,7 @@ router.route("/availability").post(checkAuth, createOrUpdateAvailability);
 // Get availability by user email
 router.route("/availability/user/:email").get(checkAuth, getAvailabilityByUser);
 
-
+router.route("/all-availabilities").get(getallAvailabilities);
 
 
 export { router }

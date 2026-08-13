@@ -400,6 +400,52 @@ export const getAvailabilityService = async (userId: string) => {
     }
 };
 
+
+export const getallAvailabilitiesService = async (payload: any, res: Response) => {
+  try {
+    const availabilities = await AvailabilityModel
+      .find({
+        blockStartDate: { $exists: true, $ne: null },
+        blockEndDate: { $exists: true, $ne: null }
+      })
+      .sort({ createdAt: -1 });
+
+    const blockedDates: any[] = [];
+
+    availabilities.forEach((availability) => {
+      const startDate = new Date(availability.blockStartDate);
+      const endDate = new Date(availability.blockEndDate);
+
+      // Include both start and end dates
+      const currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        blockedDates.push({
+          date: new Date(currentDate)
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+
+    return {
+      success: true,
+      message: "Blocked dates fetched successfully",
+      data: blockedDates,
+      count: blockedDates.length
+    };
+
+  } catch (error: any) {
+    console.error("Error fetching blocked dates:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to fetch blocked dates",
+      data: null
+    };
+  }
+};
+
 // 2. CREATE OR UPDATE AVAILABILITY
 export const createOrUpdateAvailabilityService = async (
     payload: any,

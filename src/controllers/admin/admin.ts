@@ -8,7 +8,7 @@ import {
     getAllprojectsService, getAprojectsService, updateAprojectService,
     getPlansService, createPlansService, updateAPlansService, deleteAPlansService,
     getSubscriptionPlansService, createSubscriptionPlansService, updateASubscriptionPlansService, deleteASubscriptionPlansService
-    , getNotificationsService
+    , getNotificationsService, getAllClientsService, createClientService, updateClientService, deleteClientService
 } from "../../services/admin/admin-service";
 import { errorParser } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
@@ -330,6 +330,48 @@ export const updateASubscriptionPlans = async (req: Request, res: Response) => {
 export const deleteASubscriptionPlans = async (req: Request, res: Response) => {
     try {
         const response = await deleteASubscriptionPlansService(req.params.id, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+
+export const getAllClient = async (req: Request, res: Response) => {
+    try {
+        const response = await getAllClientsService(req.query,res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+export const createClient = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).currentUser;
+        const response = await createClientService({ userId, body: req.body }, res)
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" })
+    }
+}
+
+export const updateAClient = async (req: Request, res: Response) => {
+    try {
+        const response = await updateClientService(req.params.id, req.body, res);
+        return res.status(httpStatusCode.OK).json(response)
+    } catch (error: any) {
+        const { code, message } = errorParser(error)
+        return res.status(code || httpStatusCode.INTERNAL_SERVER_ERROR).json({ success: false, message: message || "An error occurred" });
+    }
+}
+
+export const deleteAClient = async (req: Request, res: Response) => {
+    try {
+        const response = await deleteClientService(req.params.id, res)
         return res.status(httpStatusCode.OK).json(response)
     } catch (error: any) {
         const { code, message } = errorParser(error)
