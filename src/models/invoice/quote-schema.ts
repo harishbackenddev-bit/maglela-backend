@@ -255,11 +255,30 @@ QuoteSchema.pre('save', function(next) {
 // STATIC METHODS
 // ============================================
 
-QuoteSchema.static('generateQuoteNumber', async function generateQuoteNumber() {
-  const year = new Date().getFullYear();
-  const count = await this.countDocuments();
-  return `QT-${year}-${String(count + 1).padStart(4, '0')}`;
-});
+QuoteSchema.static(
+  "generateQuoteNumber",
+  async function generateQuoteNumber() {
+    const year = new Date().getFullYear();
+
+    const lastQuote = await this.findOne({
+      quoteNumber: new RegExp(`^QT-${year}-`),
+    }).sort({ quoteNumber: -1 });
+
+    let nextNumber = 1;
+
+    if (lastQuote?.quoteNumber) {
+      const match = lastQuote.quoteNumber.match(
+        new RegExp(`^QT-${year}-(\\d+)$`)
+      );
+
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    return `QT-${year}-${String(nextNumber).padStart(4, "0")}`;
+  }
+);
 
 // ============================================
 // INSTANCE METHODS
