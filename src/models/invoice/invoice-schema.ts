@@ -258,11 +258,30 @@ InvoiceSchema.pre('save', function(next) {
 // STATIC METHODS
 // ============================================
 
-InvoiceSchema.static('generateInvoiceNumber', async function generateInvoiceNumber() {
-  const year = new Date().getFullYear();
-  const count = await this.countDocuments();
-  return `INV-${year}-${String(count + 1).padStart(4, '0')}`;
-});
+InvoiceSchema.static(
+  "generateInvoiceNumber",
+  async function generateInvoiceNumber() {
+    const year = new Date().getFullYear();
+
+    const lastInvoice = await this.findOne({
+      invoiceNumber: new RegExp(`^INV-${year}-`),
+    }).sort({ invoiceNumber: -1 });
+
+    let nextNumber = 1;
+
+    if (lastInvoice?.invoiceNumber) {
+      const match = lastInvoice.invoiceNumber.match(
+        new RegExp(`^INV-${year}-(\\d+)$`)
+      );
+
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    return `INV-${year}-${String(nextNumber).padStart(4, "0")}`;
+  }
+);
 
 // ============================================
 // INSTANCE METHODS
