@@ -6,6 +6,11 @@ import {
     deleteAWritingContent, deleteASpeechContent, createSupportMessage, getQuote, updateQuote, getInvoices
 
 } from "../controllers/user/user";
+
+import {
+updateAproject
+} from "../controllers/admin/admin";
+
 import { checkAuth } from "../middleware/check-auth";
 import { uploadProfile, uploadDocument } from "../config/multerConfig";
 import {
@@ -55,6 +60,7 @@ router.route("/change-password").post(checkAuth, updateAPassword);
 router.route("/two-factor").post(checkAuth, twoFactorAuth);
 router.route("/workshops").post(checkAuth, createWorkshop).get(checkAuth, getworkshop);
 router.route("/projects").post(checkAuth, createProjects).get(checkAuth, getprojects);
+router.route("/projects/:id").put(checkAuth, updateAproject)
 router.post("/upload-document", checkAuth, uploadDocument.single("document"), documentUpload);
 router.route("/workshops-guest").post(checkAuth, createWorkshop)
 router.route("/credit-plans").get(getPlans)

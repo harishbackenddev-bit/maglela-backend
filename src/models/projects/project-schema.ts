@@ -52,6 +52,18 @@ const ProjectSchema = new Schema(
             type: String,
             default: null,
         },
+        feedbacknote: {
+            type: String,
+            default: null,
+        },
+        feedbackadminattachment: {
+            type: String,
+            default: null,
+        },
+        feedbackcount: {
+            type: String,
+            default: null,
+        },
 
         status: {
             type: String,

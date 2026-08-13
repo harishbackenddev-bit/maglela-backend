@@ -282,18 +282,24 @@ export const getExpertsService = async (payload: any, res: Response) => {
 
 
 export const createExpertsService = async (
-  body: any,
+  payload: any,
   res: Response
 ) => {
   try {
+    console.log("payload", payload);
+
+    const { userId, body } = payload;
+
+    console.log("expert body", body);
+
     const identifier = customAlphabet("0123456789", 3);
 
     // Check if expert with same email already exists
     if (body.email) {
-      const existingExpert = await expertsModel.findOne({ 
-        email: body.email 
+      const existingExpert = await expertsModel.findOne({
+        email: body.email,
       });
-      
+
       if (existingExpert) {
         return {
           success: false,
@@ -303,9 +309,9 @@ export const createExpertsService = async (
       }
     }
 
-    // Create new expert with generated identifier
     const expert = await expertsModel.create({
       ...body,
+      userId,
       identifier: identifier(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -318,6 +324,7 @@ export const createExpertsService = async (
     };
   } catch (error: any) {
     console.error("Error creating expert:", error);
+
     return {
       success: false,
       message: error.message || "Failed to create expert",
@@ -404,15 +411,15 @@ export const deleteAExpertsService = async (id: string, res: Response) => {
 
 export const getAllworkshopService = async (payload: any, res: Response) => {
   const userId = payload.userId;
-  // console.log("userIdpayload", userId);
-  const user = await workshopModel.find();
+
+  const user = await workshopModel.find().sort({ createdAt: -1 });
 
   return {
     success: true,
     message: "Workshops fetched successfully",
     data: user
   };
-}
+};
 
 
 export const getAworkshopService = async (
