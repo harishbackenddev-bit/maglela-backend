@@ -753,10 +753,9 @@ export const getQuoteService = async (
 
     const userEmail = user.email;
 
-    // Find quote by client email
-    const quote = await QuoteModel.find({
+        const quote = await QuoteModel.find({
       "clientInfo.email": userEmail,
-    });
+    }).sort({ createdAt: -1 }); // Latest first
 
     if (!quote) {
       return {
@@ -790,7 +789,6 @@ export const getInvoicesService = async (
   try {
     const { userId } = payload;
 
-    // Find user by ID
     const user = await usersModel.findById(userId);
 
     if (!user) {
@@ -803,23 +801,22 @@ export const getInvoicesService = async (
 
     const userEmail = user.email;
 
-    // Find quote by client email
-    const quote = await InvoiceModel.find({
+    const invoices = await InvoiceModel.find({
       "clientInfo.email": userEmail,
-    });
+    }).sort({ createdAt: -1 }); // Latest first
 
-    if (!quote) {
+    if (!invoices.length) {
       return {
         success: false,
         message: "Invoice not found",
-        data: null,
+        data: [],
       };
     }
 
     return {
       success: true,
       message: "Invoice fetched successfully",
-      data: quote,
+      data: invoices,
     };
   } catch (error: any) {
     console.error("Error fetching Invoice:", error);
