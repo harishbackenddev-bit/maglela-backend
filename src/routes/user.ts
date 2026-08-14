@@ -131,7 +131,7 @@ router.get("/credit/orders/user/:email", checkAuth, getUserCreditOrders);
 router.route("/invoices/create-payment").post(checkAuth, initiateInvoicePayment)
 
 // 2. PayFast Webhook - PayFast calls this after payment
-router.post("/invoices/payfast/notify", handleInvoicePaymentNotification);
+router.post("/invoice/payfast/notify", handleInvoicePaymentNotification);
 
 // 4. Get Order by ID
 router.get("/invoices/orders/:orderId", getInvoiceOrder);
