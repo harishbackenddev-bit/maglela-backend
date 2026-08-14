@@ -754,7 +754,7 @@ export const getQuoteService = async (
     const userEmail = user.email;
 
     // Find quote by client email
-    const quote = await QuoteModel.findOne({
+    const quote = await QuoteModel.find({
       "clientInfo.email": userEmail,
     });
 
@@ -804,7 +804,7 @@ export const getInvoicesService = async (
     const userEmail = user.email;
 
     // Find quote by client email
-    const quote = await InvoiceModel.findOne({
+    const quote = await InvoiceModel.find({
       "clientInfo.email": userEmail,
     });
 
