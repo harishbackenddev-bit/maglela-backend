@@ -25,11 +25,14 @@
     "@types/nodemailer": "^8.0.1",
     "@types/pdf-parse": "^1.1.5",
     "@types/prop-types": "^15.7.13",
+    "@types/supertest": "^7.2.1",
     "@types/uuid": "^10.0.0",
     "@types/webidl-conversions": "^7.0.3",
+    "supertest": "^7.3.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",
