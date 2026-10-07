@@ -1,4 +1,4 @@
-// models/subscription/subscription-plan.ts
+
 import { Schema, model } from "mongoose";
 
 const SubscriptionPlanSchema = new Schema(
@@ -11,31 +11,31 @@ const SubscriptionPlanSchema = new Schema(
             }
         },
 
-        // Tier: Basic, Pro, Enterprise
+        
         tier: {
             type: String,
             required: true,
         },
 
-        // Plan Name: Individual Scholar, Department, Organisation
+        
         name: {
             type: String,
             required: true,
         },
 
-        // Audience description
+        
         audience: {
             type: String,
             default: "",
         },
 
-        // Target audience details
+        
         targetAudience: {
             type: String,
             default: "",
         },
 
-        // Pricing
+        
         monthlyPrice: {
             type: String,
             required: true,
@@ -45,7 +45,7 @@ const SubscriptionPlanSchema = new Schema(
             default: "",
         },
 
-        // Credits
+        
         creditsMonthly: {
             type: Number,
             required: true,
@@ -56,13 +56,13 @@ const SubscriptionPlanSchema = new Schema(
             default: 0,
         },
 
-        // Period label
+        
         periodLabel: {
             type: String,
             default: "per month",
         },
 
-        // Call to Action
+        
         buttonLabel: {
             type: String,
             default: "Get Started",
@@ -72,13 +72,13 @@ const SubscriptionPlanSchema = new Schema(
             default: "/contact",
         },
 
-        // Features
+        
         features: {
             type: [String],
             default: [],
         },
 
-        // Status
+        
         isPopular: {
             type: Boolean,
             default: false,
@@ -88,13 +88,13 @@ const SubscriptionPlanSchema = new Schema(
             default: true,
         },
 
-        // Display order
+        
         displayOrder: {
             type: Number,
             default: 0,
         },
 
-        // Created by
+        
         createdBy: {
             type: String,
             default: null,
@@ -109,7 +109,7 @@ const SubscriptionPlanSchema = new Schema(
     }
 );
 
-// Indexes
+
 SubscriptionPlanSchema.index({ name: 1 });
 SubscriptionPlanSchema.index({ tier: 1 });
 SubscriptionPlanSchema.index({ isActive: 1, isPopular: 1 });

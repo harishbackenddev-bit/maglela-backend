@@ -1,9 +1,9 @@
-// models/invoice/invoice.model.ts
+
 import { Schema, model, Model, Document } from "mongoose";
 
-// ============================================
-// INTERFACES
-// ============================================
+
+
+
 
 export interface IClientInfo {
   clientName: string;
@@ -46,20 +46,20 @@ export interface IInvoice extends Document {
   createdAt: Date;
   updatedAt: Date;
 
-  // Instance methods
+  
   sendInvoice(): Promise<IInvoice>;
   markAsViewed(): Promise<IInvoice>;
   markAsPaid(): Promise<IInvoice>;
 }
 
-// Static methods interface
+
 interface IInvoiceModel extends Model<IInvoice> {
   generateInvoiceNumber(): Promise<string>;
 }
 
-// ============================================
-// SCHEMAS
-// ============================================
+
+
+
 
 const ClientInfoSchema = new Schema<IClientInfo>({
   clientName: {
@@ -122,7 +122,7 @@ const InvoiceItemSchema = new Schema<IInvoiceItem>({
   },
 });
 
-// Main Invoice Schema
+
 const InvoiceSchema = new Schema<IInvoice, IInvoiceModel>(
   {
     invoiceNumber: {
@@ -212,9 +212,9 @@ const InvoiceSchema = new Schema<IInvoice, IInvoiceModel>(
   }
 );
 
-// ============================================
-// INDEXES
-// ============================================
+
+
+
 
 InvoiceSchema.index({ invoiceNumber: 1 });
 InvoiceSchema.index({ "clientInfo.email": 1 });
@@ -222,9 +222,9 @@ InvoiceSchema.index({ status: 1 });
 InvoiceSchema.index({ createdAt: -1 });
 InvoiceSchema.index({ dueDate: 1 });
 
-// ============================================
-// PRE-SAVE MIDDLEWARE
-// ============================================
+
+
+
 
 InvoiceSchema.pre('save', function(next) {
   let subtotal = 0;
@@ -246,7 +246,7 @@ InvoiceSchema.pre('save', function(next) {
   this.discountTotal = discountTotal;
   this.grandTotal = subtotal + taxTotal - discountTotal;
 
-  // Check if overdue
+  
   if (this.dueDate && new Date() > new Date(this.dueDate) && this.status === 'sent') {
     this.status = 'overdue';
   }
@@ -254,9 +254,9 @@ InvoiceSchema.pre('save', function(next) {
   next();
 });
 
-// ============================================
-// STATIC METHODS
-// ============================================
+
+
+
 
 InvoiceSchema.static(
   "generateInvoiceNumber",
@@ -283,9 +283,9 @@ InvoiceSchema.static(
   }
 );
 
-// ============================================
-// INSTANCE METHODS
-// ============================================
+
+
+
 
 InvoiceSchema.method('sendInvoice', function sendInvoice() {
   this.status = 'sent';
@@ -307,8 +307,8 @@ InvoiceSchema.method('markAsPaid', function markAsPaid() {
   return this.save();
 });
 
-// ============================================
-// MODEL
-// ============================================
+
+
+
 
 export const InvoiceModel = model<IInvoice, IInvoiceModel>("invoices", InvoiceSchema);

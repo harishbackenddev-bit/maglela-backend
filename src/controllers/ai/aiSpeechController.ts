@@ -1,4 +1,4 @@
-// controllers/ai/aiSpeechController.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../lib/constant";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -11,9 +11,9 @@ import {
 } from "../../services/ai/aiSpeechService";
 import { extractTextFromFile } from "../../utils/fileProcessor";
 
-// ============================================
-// GENERATE SPEECH (Like generateDocument)
-// ============================================
+
+
+
 
 export const generateSpeech = async (req: Request, res: Response) => {
     try {
@@ -38,7 +38,7 @@ export const generateSpeech = async (req: Request, res: Response) => {
 
         const userId = (req as any).currentUser;
         
-        // Extract file content if file is uploaded
+        
         let fileContent = "";
         if (req.file) {
             try {
@@ -80,9 +80,9 @@ export const generateSpeech = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// COST ESTIMATES (Like getCostEstimates)
-// ============================================
+
+
+
 
 export const getSpeechCostEstimates = async (req: Request, res: Response) => {
     try {
@@ -110,9 +110,9 @@ export const getSpeechCostEstimates = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// AI COST ESTIMATES (Like getAICostEstimates)
-// ============================================
+
+
+
 
 export const getAISpeechCostEstimates = async (req: Request, res: Response) => {
     try {
@@ -135,9 +135,9 @@ export const getAISpeechCostEstimates = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// GENERATE WITH CLAUDE (Like generateWithClaude)
-// ============================================
+
+
+
 
 export const generateWithClaudeSpeech = async (req: Request, res: Response) => {
     try {
@@ -183,7 +183,7 @@ export const generateWithClaudeSpeech = async (req: Request, res: Response) => {
             audio: req.body.audio,
             recordingDuration: req.body.recordingDuration,
             userId: userId,
-            preferredProvider: 'anthropic' // Force Claude
+            preferredProvider: 'anthropic' 
         }, res);
 
         if (response.success) {
@@ -204,9 +204,9 @@ export const generateWithClaudeSpeech = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// GENERATE WITH OPENAI (Like generateWithOpenAI)
-// ============================================
+
+
+
 
 export const generateWithOpenAISpeech = async (req: Request, res: Response) => {
     try {
@@ -252,7 +252,7 @@ export const generateWithOpenAISpeech = async (req: Request, res: Response) => {
             audio: req.body.audio,
             recordingDuration: req.body.recordingDuration,
             userId: userId,
-            preferredProvider: 'openai' // Force OpenAI
+            preferredProvider: 'openai' 
         }, res);
 
         if (response.success) {

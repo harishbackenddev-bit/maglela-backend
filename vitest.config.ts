@@ -4,13 +4,13 @@ import path from "path";
 export default defineConfig({
   resolve: {
     alias: [
-      // the source uses bare "src/..." imports (e.g. "src/lib/constant")
-      { find: /^src\//, replacement: path.resolve(__dirname, "src") + "/" },
+      
+      { find: /^src\
     ],
   },
   test: {
     globals: true,
-    pool: "forks", // process.chdir() is not allowed inside worker threads
+    pool: "forks", 
     environment: "node",
     globalSetup: ["./unit-tests/setup/global.ts"],
     setupFiles: ["./unit-tests/setup/setup.ts"],

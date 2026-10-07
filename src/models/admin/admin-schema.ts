@@ -3,7 +3,7 @@ import mongoose from "mongoose"
 const adminSchema = new mongoose.Schema({
     identifier: {
         type: String,
-        // required: true,
+        
         unique: true
     },
     role: {

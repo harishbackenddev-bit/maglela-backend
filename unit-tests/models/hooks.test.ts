@@ -73,7 +73,7 @@ describe("Invoice model", () => {
   it("sendInvoice / markAsViewed / markAsPaid update status + timestamps and save", async () => {
     const doc: any = new InvoiceModel(invoiceBase());
     doc.save = vi.fn().mockResolvedValue(doc);
-    await doc.markAsViewed();           // draft -> unchanged
+    await doc.markAsViewed();           
     expect(doc.status).toBe("draft");
     await doc.sendInvoice();
     expect(doc.status).toBe("sent");
@@ -111,7 +111,7 @@ describe("Order model", () => {
   it("pre-save generates an ORD- order number when missing", async () => {
     const doc: any = new orderModel(order({ orderNumber: undefined }));
     doc.orderNumber = undefined;
-    // orderNumber is required so validation fails first; run the hook function directly
+    
     const fn = doc.$__schema.s.hooks._pres.get("save").find((h: any) => h.fn.toString().includes("ORD-")).fn;
     fn.call(doc, () => {});
     expect(doc.orderNumber).toMatch(/^ORD-[a-z0-9]+-[A-Z0-9]+$/);

@@ -1,4 +1,4 @@
-// controllers/payfast/credit.controller.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../lib/constant";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -8,9 +8,9 @@ import {
     getCreditOrderStatusService
 } from "../../services/payfast/invoiceproduct";
 
-// ============================================
-// 1. INITIATE CREDIT PAYMENT
-// ============================================
+
+
+
 export const initiateInvoicePayment = async (req: Request, res: Response) => {
     try {
         const response = await initiateCreditPaymentService(req.body, req, res);
@@ -29,9 +29,9 @@ export const initiateInvoicePayment = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// 2. HANDLE CREDIT PAYMENT NOTIFICATION
-// ============================================
+
+
+
 export const handleInvoicePaymentNotification = async (req: Request, res: Response) => {
     try {
         const response = await handleCreditPaymentNotificationService(req.body, res);

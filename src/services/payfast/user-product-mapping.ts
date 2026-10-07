@@ -1,6 +1,6 @@
-// services/product/toolkit-mapping.ts
 
-// ✅ Toolkit PDF Mapping
+
+
 const TOOLKIT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
   '1': {
     fileUrl: '/uploads/toolkits/101-communications-playbook.pdf',
@@ -36,9 +36,7 @@ const TOOLKIT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
   }
 };
 
-/**
- * Get toolkit PDF file info by ID
- */
+
 export const getToolkitFileInfoById = (toolkitId: string): { fileUrl: string; fileName: string } | null => {
   return TOOLKIT_PDF_MAP[toolkitId] || null;
 };

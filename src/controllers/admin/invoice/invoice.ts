@@ -1,4 +1,4 @@
-// controllers/invoice/invoice.controller.ts
+
 import { Request, Response } from "express";
 import {
   createInvoiceService,
@@ -11,9 +11,9 @@ import {
   updateInvoiceStatusService,
 } from "../../../services/admin/invoice/invoice";
 
-// ============================================
-// CREATE INVOICE
-// ============================================
+
+
+
 export const createInvoice = async (req: Request, res: Response) => {
   try {
     const result = await createInvoiceService(req.body, res);
@@ -28,9 +28,9 @@ export const createInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// SAVE AS DRAFT
-// ============================================
+
+
+
 export const saveDraftInvoice = async (req: Request, res: Response) => {
   try {
     const result = await saveDraftInvoiceService(req.body, res);
@@ -45,9 +45,9 @@ export const saveDraftInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET ALL INVOICES
-// ============================================
+
+
+
 export const getInvoices = async (req: Request, res: Response) => {
   try {
     const result = await getInvoicesService(req.query, res);
@@ -62,9 +62,9 @@ export const getInvoices = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET SINGLE INVOICE
-// ============================================
+
+
+
 export const getInvoice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -80,9 +80,9 @@ export const getInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// UPDATE INVOICE
-// ============================================
+
+
+
 export const updateInvoice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -98,9 +98,9 @@ export const updateInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// DELETE INVOICE
-// ============================================
+
+
+
 export const deleteInvoice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -116,9 +116,9 @@ export const deleteInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// SEND INVOICE
-// ============================================
+
+
+
 export const sendInvoice = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -134,9 +134,9 @@ export const sendInvoice = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// UPDATE INVOICE STATUS
-// ============================================
+
+
+
 export const updateInvoiceStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

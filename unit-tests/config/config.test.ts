@@ -90,9 +90,9 @@ describe("payfast.config", () => {
   it.each([["credit", CREDIT_PAYFAST_CONFIG], ["invoice", INVOICE_PAYFAST_CONFIG]])("%s config has merchant + return/cancel/notify urls", (_n, c) => {
     expect(c.merchantId).toBeTruthy();
     expect(c.merchantKey).toBeTruthy();
-    expect(c.returnUrl).toMatch(/^https?:\/\//);
-    expect(c.cancelUrl).toMatch(/^https?:\/\//);
-    expect(c.notifyUrl).toMatch(/^https?:\/\//);
+    expect(c.returnUrl).toMatch(/^https?:\/\
+    expect(c.cancelUrl).toMatch(/^https?:\/\
+    expect(c.notifyUrl).toMatch(/^https?:\/\
   });
   it("credit/invoice urls are built from FRONTEND_URL / BASE_URL", () => {
     expect(CREDIT_PAYFAST_CONFIG.returnUrl).toBe("http://localhost:5173/user/credit-success");

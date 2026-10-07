@@ -1,4 +1,4 @@
-// utils/email.utils.ts
+
 import nodemailer from "nodemailer";
 
 interface InvoiceEmailData {
@@ -33,7 +33,7 @@ interface QuoteEmailData {
   }>;
 }
 
-// Configure email transporter
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "587"),
@@ -56,7 +56,7 @@ export const sendInvoiceEmail = async (data: InvoiceEmailData) => {
     items 
   } = data;
 
-  // Generate items HTML
+  
   const itemsHtml = items.map((item: any) => `
     <tr>
       <td style="padding: 10px 8px; border-bottom: 1px solid #eee;">${item.description || 'N/A'}</td>
@@ -314,7 +314,7 @@ export const sendQuoteEmail = async (data: QuoteEmailData) => {
     items 
   } = data;
 
-  // Generate items HTML
+  
   const itemsHtml = items.map((item: any) => `
     <tr>
       <td style="padding: 10px 8px; border-bottom: 1px solid #eee;">${item.description || 'N/A'}</td>

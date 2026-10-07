@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 configDotenv(); 
 
 const connectDB = async () => {
-  const maxRetries = 5; // Number of retry attempts
+  const maxRetries = 5; 
   let attempt = 0;
 
   const connectWithRetry = async () => {
@@ -17,7 +17,7 @@ const connectDB = async () => {
  
       if (attempt < maxRetries) {
         console.log(`Retrying in 5 seconds... (Attempt ${attempt + 1} of ${maxRetries})`);
-        setTimeout(connectWithRetry, 5000); // Retry after 5 seconds
+        setTimeout(connectWithRetry, 5000); 
       } 
       else {
         console.error("Max retry attempts reached. Exiting...");

@@ -1,4 +1,4 @@
-// validation/ai-validation.ts
+
 import { z } from "zod";
 
 export const aiGenerateSchema = z.object({

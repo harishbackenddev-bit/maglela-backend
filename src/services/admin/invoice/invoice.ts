@@ -1,4 +1,4 @@
-// services/invoice/invoice.service.ts
+
 import { InvoiceModel } from "../../../models/invoice/invoice-schema";
 import { Response } from "express";
 import { sendInvoiceEmail } from "../../../utils/mails/invoiceemail";
@@ -15,7 +15,7 @@ export const createInvoiceService = async (body: any, res: Response) => {
       additionalNotes,
       createdBy,
       createdByEmail,
-      status = "sent" // Default to sent
+      status = "sent" 
     } = body;
 
     if (!clientInfo?.clientName || !clientInfo?.email) {
@@ -36,7 +36,7 @@ export const createInvoiceService = async (body: any, res: Response) => {
 
     const invoiceNumber = await InvoiceModel.generateInvoiceNumber();
 
-    // Calculate totals
+    
     let subtotal = 0;
     const itemsWithTotals = items.map((item: any, index: number) => {
       const lineTotal = item.quantity * item.rate;
@@ -48,7 +48,7 @@ export const createInvoiceService = async (body: any, res: Response) => {
       };
     });
 
-    const taxTotal = subtotal * 0.15; // 15% VAT
+    const taxTotal = subtotal * 0.15; 
     const grandTotal = subtotal + taxTotal;
 
     const invoice = await InvoiceModel.create({
@@ -69,16 +69,16 @@ export const createInvoiceService = async (body: any, res: Response) => {
       sentAt: status === "sent" ? new Date() : null,
     });
 
-    // Send email if status is "sent"
+    
     if (status === "sent") {
       try {
         await sendInvoiceEmail({
           to: clientInfo.email,
           clientName: clientInfo.clientName,
           invoiceNumber: invoice.invoiceNumber,
-          amount: invoice.subtotal,        // ✅ From DB
-          taxAmount: invoice.taxTotal,     // ✅ From DB
-          totalAmount: invoice.grandTotal, // ✅ From DB
+          amount: invoice.subtotal,        
+          taxAmount: invoice.taxTotal,     
+          totalAmount: invoice.grandTotal, 
           dueDate: invoice.dueDate,
           items: itemsWithTotals,
         });
@@ -86,7 +86,7 @@ export const createInvoiceService = async (body: any, res: Response) => {
         console.log(`📧 Invoice email sent to ${clientInfo.email}`);
       } catch (emailError) {
         console.error("Error sending invoice email:", emailError);
-        // Don't fail the request if email fails
+        
       }
     }
 
@@ -119,7 +119,7 @@ export const saveDraftInvoiceService = async (body: any, res: Response) => {
 
     const invoiceNumber = await InvoiceModel.generateInvoiceNumber();
 
-    // Calculate totals for draft
+    
     let subtotal = 0;
     const itemsWithTotals = (items || []).map((item: any, index: number) => {
       const lineTotal = item.quantity * item.rate;
@@ -187,27 +187,27 @@ export const sendInvoiceService = async (id: string, body: any, res: Response) =
       };
     }
 
-    // Update status to sent
+    
     invoice.status = 'sent';
     invoice.sentAt = new Date();
     await invoice.save();
 
-    // Send email
+    
     try {
       await sendInvoiceEmail({
         to: invoice.clientInfo.email,
         clientName: invoice.clientInfo.clientName,
         invoiceNumber: invoice.invoiceNumber,
-        amount: invoice.subtotal,        // ✅ From DB
-        taxAmount: invoice.taxTotal,     // ✅ From DB
-        totalAmount: invoice.grandTotal, // ✅ From DB
+        amount: invoice.subtotal,        
+        taxAmount: invoice.taxTotal,     
+        totalAmount: invoice.grandTotal, 
         dueDate: invoice.dueDate,
         items: invoice.items || [],
       });
       console.log(`📧 Invoice email sent to ${invoice.clientInfo.email}`);
     } catch (emailError) {
       console.error("Error sending invoice email:", emailError);
-      // Don't fail the request if email fails
+      
     }
 
     return {
@@ -376,15 +376,15 @@ export const updateInvoiceStatusService = async (id: string, body: any, res: Res
         break;
       case 'sent':
         updatedInvoice = await invoice.sendInvoice();
-        // Send email when marking as sent
+        
         try {
           await sendInvoiceEmail({
             to: invoice.clientInfo.email,
             clientName: invoice.clientInfo.clientName,
             invoiceNumber: invoice.invoiceNumber,
-            amount: invoice.subtotal,        // ✅ From DB
-            taxAmount: invoice.taxTotal,     // ✅ From DB
-            totalAmount: invoice.grandTotal, // ✅ From DB
+            amount: invoice.subtotal,        
+            taxAmount: invoice.taxTotal,     
+            totalAmount: invoice.grandTotal, 
             dueDate: invoice.dueDate,
             items: invoice.items || [],
           });

@@ -1,4 +1,4 @@
-// controllers/payfast/credit.controller.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../lib/constant";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -10,9 +10,9 @@ import {
     getUserCreditOrdersService,
 } from "../../services/payfast/creditproduct";
 
-// ============================================
-// 1. INITIATE CREDIT PAYMENT
-// ============================================
+
+
+
 export const initiateCreditPayment = async (req: Request, res: Response) => {
     try {
         const response = await initiateCreditPaymentService(req.body, req, res);
@@ -31,9 +31,9 @@ export const initiateCreditPayment = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// 2. HANDLE CREDIT PAYMENT NOTIFICATION
-// ============================================
+
+
+
 export const handleCreditPaymentNotification = async (req: Request, res: Response) => {
     try {
         const response = await handleCreditPaymentNotificationService(req.body, res);
@@ -52,9 +52,9 @@ export const handleCreditPaymentNotification = async (req: Request, res: Respons
     }
 };
 
-// ============================================
-// 3. GET CREDIT ORDER STATUS
-// ============================================
+
+
+
 export const getCreditOrderStatus = async (req: Request, res: Response) => {
     try {
         const { orderId } = req.params;
@@ -74,9 +74,9 @@ export const getCreditOrderStatus = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// 4. GET CREDIT ORDER BY ID
-// ============================================
+
+
+
 export const getCreditOrder = async (req: Request, res: Response) => {
     try {
         const response = await getCreditOrderService(req.params.orderId, req.body, res);
@@ -95,9 +95,9 @@ export const getCreditOrder = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// 5. GET USER CREDIT ORDERS
-// ============================================
+
+
+
 export const getUserCreditOrders = async (req: Request, res: Response) => {
     try {
         const { email } = req.params;

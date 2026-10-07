@@ -1,4 +1,4 @@
-// models/event/event.model.ts
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEvent extends Document {
@@ -70,7 +70,7 @@ const EventSchema = new Schema<IEvent>({
   timestamps: true,
 });
 
-// Indexes for faster queries
+
 EventSchema.index({ userId: 1, date: 1 });
 EventSchema.index({ userEmail: 1 });
 EventSchema.index({ status: 1 });

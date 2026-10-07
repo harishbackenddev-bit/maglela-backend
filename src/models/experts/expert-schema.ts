@@ -3,7 +3,7 @@ import { Schema, model } from "mongoose";
 const expertSchema = new Schema({
     identifier: {
         type: String,
-        // required: true,
+        
         unique: true
     },
     name: {

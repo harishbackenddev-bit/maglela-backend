@@ -1,9 +1,9 @@
-// models/invoice/quote.model.ts
+
 import { Schema, model, Model, Document } from "mongoose";
 
-// ============================================
-// INTERFACES
-// ============================================
+
+
+
 
 export interface IClientInfo {
   clientName: string;
@@ -45,22 +45,22 @@ export interface IQuote extends Document {
   createdAt: Date;
   updatedAt: Date;
 
-  // Instance methods
+  
   sendQuote(): Promise<IQuote>;
   acceptQuote(): Promise<IQuote>;
   rejectQuote(): Promise<IQuote>;
 }
 
-// Static methods interface
+
 interface IQuoteModel extends Model<IQuote> {
   generateQuoteNumber(): Promise<string>;
 }
 
-// ============================================
-// SCHEMAS
-// ============================================
 
-// Client Information Schema
+
+
+
+
 const ClientInfoSchema = new Schema<IClientInfo>({
   clientName: {
     type: String,
@@ -77,7 +77,7 @@ const ClientInfoSchema = new Schema<IClientInfo>({
   },
 });
 
-// Line Item Schema with Tax
+
 const LineItemSchema = new Schema<ILineItem>({
   itemNumber: {
     type: Number,
@@ -110,7 +110,7 @@ const LineItemSchema = new Schema<ILineItem>({
   },
   taxRate: {
     type: Number,
-    default: 15, // 15% VAT default
+    default: 15, 
   },
   taxAmount: {
     type: Number,
@@ -122,7 +122,7 @@ const LineItemSchema = new Schema<ILineItem>({
   },
 });
 
-// Main Quote Schema
+
 const QuoteSchema = new Schema<IQuote, IQuoteModel>(
   {
     quoteNumber: {
@@ -207,18 +207,18 @@ const QuoteSchema = new Schema<IQuote, IQuoteModel>(
   }
 );
 
-// ============================================
-// INDEXES
-// ============================================
+
+
+
 
 QuoteSchema.index({ quoteNumber: 1 });
 QuoteSchema.index({ "clientInfo.email": 1 });
 QuoteSchema.index({ status: 1 });
 QuoteSchema.index({ createdAt: -1 });
 
-// ============================================
-// PRE-SAVE MIDDLEWARE
-// ============================================
+
+
+
 
 QuoteSchema.pre('save', function(next) {
   let subtotal = 0;
@@ -226,16 +226,16 @@ QuoteSchema.pre('save', function(next) {
   let discountTotal = 0;
 
   this.items.forEach((item: any) => {
-    // Calculate line total
+    
     const lineTotal = item.quantity * item.rate;
     item.lineTotal = lineTotal;
 
-    // Calculate tax for this item
+    
     const taxRate = item.taxRate || 15;
     const taxAmount = (lineTotal * taxRate) / 100;
     item.taxAmount = taxAmount;
 
-    // Calculate discount for this item
+    
     const discount = item.discount || 0;
 
     subtotal += lineTotal;
@@ -251,9 +251,9 @@ QuoteSchema.pre('save', function(next) {
   next();
 });
 
-// ============================================
-// STATIC METHODS
-// ============================================
+
+
+
 
 QuoteSchema.static(
   "generateQuoteNumber",
@@ -280,9 +280,9 @@ QuoteSchema.static(
   }
 );
 
-// ============================================
-// INSTANCE METHODS
-// ============================================
+
+
+
 
 QuoteSchema.method('sendQuote', function sendQuote() {
   this.status = 'sent';
@@ -302,8 +302,8 @@ QuoteSchema.method('rejectQuote', function rejectQuote() {
   return this.save();
 });
 
-// ============================================
-// MODEL
-// ============================================
+
+
+
 
 export const QuoteModel = model<IQuote, IQuoteModel>("quotes", QuoteSchema);

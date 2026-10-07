@@ -1,4 +1,4 @@
-// services/ai/speech/aiSpeechService.ts
+
 import { Response } from "express";
 import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
@@ -9,13 +9,13 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Get __dirname equivalent in ES modules
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================
-// MAIN SPEECH GENERATION SERVICE (WITH CREDITS)
-// ============================================
+
+
+
 
 export const generateSpeechService = async (payload: any, res: Response) => {
     try {
@@ -50,7 +50,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             recordingDuration
         });
 
-        // ✅ Validate
+        
         if (!title) {
             console.log("❌ Validation failed: Title is required");
             return errorResponseHandler("Title is required", httpStatusCode.BAD_REQUEST, res);
@@ -61,9 +61,9 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             return errorResponseHandler("User ID is required", httpStatusCode.BAD_REQUEST, res);
         }
 
-        // ============================================
-        // ✅ GET USER AND CHECK CREDITS
-        // ============================================
+        
+        
+        
         console.log(`🔍 Fetching user with ID: ${userId}`);
         const user = await usersModel.findById(userId);
         if (!user) {
@@ -71,12 +71,12 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
         }
 
-        // Get current credits
+        
         let currentCredits = user.credits || 0;
         console.log(`👤 User found: ${user.email}`);
         console.log(`💰 Current credits: ${currentCredits}`);
 
-        // ✅ CHECK IF USER HAS ENOUGH CREDITS (MINIMUM 1 CREDIT)
+        
         if (currentCredits < 1) {
             console.log(`❌ Insufficient credits: ${currentCredits} < 1`);
             return errorResponseHandler(
@@ -86,9 +86,9 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             );
         }
 
-        // ============================================
-        // ✅ GENERATE SPEECH
-        // ============================================
+        
+        
+        
         console.log("🤖 Generating speech with AI...");
         console.log("📝 Generation params:", {
             title,
@@ -126,23 +126,23 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             cost: result.cost
         });
 
-        // ============================================
-        // ✅ CREDIT DEDUCTION LOGIC (SAME AS WRITING)
-        // ============================================
         
-        // ✅ Get ZAR cost from AI response
+        
+        
+        
+        
         const zarCost = result.cost?.zar || 0;
         
-        // ✅ Calculate credits to deduct (zarCost * 5)
+        
         let creditsToDeduct = zarCost * 5;
         
-        // ✅ Force minimum deduction of 1 credit
+        
         if (creditsToDeduct < 1 && result.text && result.text.length > 0) {
             creditsToDeduct = 1;
             console.log(`💰 Minimum credit deduction applied: 1 credit (zarCost was ${zarCost})`);
         }
 
-        // ✅ Round to 2 decimal places
+        
         const roundedCredits = Math.round(creditsToDeduct * 100) / 100;
 
         console.log("💰 Credit calculation:");
@@ -151,7 +151,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
         console.log(`   - Credits to deduct: ${zarCost} × 5 = ${creditsToDeduct}`);
         console.log(`   - Rounded credits: ${roundedCredits}`);
 
-        // ✅ CHECK IF USER HAS ENOUGH CREDITS AFTER CALCULATION
+        
         if (currentCredits < roundedCredits) {
             console.log(`❌ Insufficient credits: ${currentCredits} < ${roundedCredits}`);
             return errorResponseHandler(
@@ -161,7 +161,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             );
         }
 
-        // ✅ DEDUCT CREDITS AFTER SUCCESSFUL GENERATION
+        
         let newCredits = currentCredits - roundedCredits;
         console.log(`💳 Credits before deduction: ${currentCredits}`);
         console.log(`💳 Credits after deduction: ${newCredits}`);
@@ -214,9 +214,9 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             console.log("⚠️ Generation succeeded but credit deduction failed!");
         }
 
-        // ============================================
-        // ✅ SAVE AUDIO FILE
-        // ============================================
+        
+        
+        
         let audioUrl = "";
         try {
             audioUrl = await saveAudioFile(
@@ -229,14 +229,14 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             console.error("❌ Failed to save audio file:", saveError);
         }
 
-        // ✅ If audioUrl is empty, use base64 fallback
+        
         if (!audioUrl) {
             console.warn("⚠️ Audio URL is empty, using base64 fallback");
             const base64Audio = result.audioData.toString('base64');
             audioUrl = `data:audio/mp3;base64,${base64Audio}`;
         }
 
-        // Calculate average score
+        
         const avgScore = Math.floor(
             (result.analysis.authority +
                 result.analysis.clarity +
@@ -245,7 +245,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
                 result.analysis.narrativeDepth) / 5
         );
 
-        // Format duration
+        
         const formatDuration = (seconds: number): string => {
             if (!seconds || isNaN(seconds) || seconds < 0) return '00:00';
             const mins = Math.floor(seconds / 60);
@@ -253,14 +253,14 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
 
-        // ============================================
-        // ✅ SAVE TO DATABASE
-        // ============================================
+        
+        
+        
         let savedContent = null;
         try {
             console.log("💾 Saving generated content to database...");
             
-            // Check if content already exists
+            
             const existingContent = await aiContentModel.findOne({
                 userId,
                 title: title.trim(),
@@ -269,7 +269,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             });
 
             if (existingContent) {
-                // ✅ UPDATE existing content
+                
                 existingContent.content = result.text;
                 existingContent.parameters = result.analysis;
                 existingContent.avgScore = avgScore;
@@ -299,7 +299,7 @@ export const generateSpeechService = async (payload: any, res: Response) => {
                 console.log(`✅ Updated existing speech: ${existingContent.identifier}`);
 
             } else {
-                // ✅ CREATE new content
+                
                 const newContent = new aiContentModel({
                     userId,
                     contentType: 'speech',
@@ -339,9 +339,9 @@ export const generateSpeechService = async (payload: any, res: Response) => {
             console.error("❌ Database save error:", dbError);
         }
 
-        // ============================================
-        // ✅ BUILD RESPONSE
-        // ============================================
+        
+        
+        
         const responseData: any = {
             audioUrl: audioUrl,
             duration: result.duration,
@@ -416,11 +416,11 @@ export const generateSpeechService = async (payload: any, res: Response) => {
     }
 };
 
-// ============================================
-// SAVE AUDIO FILE
-// ============================================
 
-// services/ai/speech/aiSpeechService.ts
+
+
+
+
 
 const saveAudioFile = async (
     audioData: Buffer,
@@ -431,7 +431,7 @@ const saveAudioFile = async (
         const projectRoot = path.resolve(__dirname, "../../..");
         const uploadDir = path.join(projectRoot, "public", "uploads", "audio");
 
-        // ✅ Use fs.promises for async operations
+        
         await fs.promises.mkdir(uploadDir, { recursive: true });
 
         const timestamp = Date.now();
@@ -439,7 +439,7 @@ const saveAudioFile = async (
         const filename = `speech_${userId}_${timestamp}_${random}.${format || 'mp3'}`;
         const filepath = path.join(uploadDir, filename);
 
-        // ✅ FIX: Convert Buffer to Uint8Array
+        
         const uint8Array = new Uint8Array(audioData);
         await fs.promises.writeFile(filepath, uint8Array);
 
@@ -452,9 +452,9 @@ const saveAudioFile = async (
     }
 };
 
-// ============================================
-// COST ESTIMATES SERVICE
-// ============================================
+
+
+
 
 export const getCostEstimatesService = async (params: any, res: Response) => {
     try {
@@ -511,9 +511,9 @@ export const getCostEstimatesService = async (params: any, res: Response) => {
     }
 };
 
-// ============================================
-// AI COST ESTIMATES SERVICE
-// ============================================
+
+
+
 
 export const getAICostEstimatesService = async (params: any, res: Response) => {
     try {

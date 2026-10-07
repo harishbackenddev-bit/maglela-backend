@@ -1,4 +1,4 @@
-// controllers/ai/aiWritingController.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../lib/constant";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -37,7 +37,7 @@ export const generateDocument = async (req: Request, res: Response) => {
             return res.status(httpStatusCode.CREATED).json(response);
         }
         
-        // If response is not success but also not handled by errorResponseHandler
+        
         return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: "Failed to generate document"

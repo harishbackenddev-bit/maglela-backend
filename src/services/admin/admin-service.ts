@@ -100,7 +100,7 @@ export const forgotPasswordService = async (payload: any, res: Response) => {
 
 
 export const newPassswordAfterOTPVerifiedService = async (payload: { password: string, otp: string }, res: Response) => {
-    // console.log('payload: ', payload);
+    
     const { password, otp } = payload
 
     const existingToken = await getPasswordResetTokenByToken(otp)
@@ -156,19 +156,19 @@ export const getAllUsersService = async (payload: any) => {
 }
 
 export const getAUserService = async (id: string, res: Response) => {
-    //   const user = await usersModel.findById(id);
-    //   if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+    
+    
 
-    //   const userProjects = await projectsModel.find({ userId: id }).select("-__v");
+    
 
-    //   return {
-    //       success: true,
-    //       message: "User retrieved successfully",
-    //       data: {
-    //           user,
-    //           projects: userProjects.length > 0 ? userProjects : [],
-    //       }
-    //   };
+    
+    
+    
+    
+    
+    
+    
+    
 }
 
 
@@ -191,10 +191,10 @@ export const deleteAUserService = async (id: string, res: Response) => {
     const user = await usersModel.findById(id);
     if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
 
-    // Delete user projects ----
+    
     const userProjects = await projectModel.deleteMany({ userId: id })
     const workshops = await workshopModel.deleteMany({ userId: id })
-    // Delete user ----
+    
     await usersModel.findByIdAndDelete(id)
 
     return {
@@ -213,7 +213,7 @@ export const updateAProfileService = async (
     const userId = payload.userId;
     const body = payload.body;
 
-    // First check Admin
+    
     let user = await adminModel.findById(userId);
 
     if (user) {
@@ -230,7 +230,7 @@ export const updateAProfileService = async (
       };
     }
 
-    // If not admin, check normal User
+    
     user = await usersModel.findById(userId);
 
     if (user) {
@@ -247,7 +247,7 @@ export const updateAProfileService = async (
       };
     }
 
-    // Not found in either collection
+    
     return errorResponseHandler(
       "User not found",
       httpStatusCode.NOT_FOUND,
@@ -273,7 +273,7 @@ export const updateAPasswordService = async (payload: any, res: Response) => {
 
   if (!user) { return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res); }
 
-  // Check current password
+  
   const isPasswordMatched = await bcrypt.compare(
     currentPassword,
     user.password
@@ -287,11 +287,11 @@ export const updateAPasswordService = async (payload: any, res: Response) => {
     );
   }
 
-  // Hash new password
+  
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-  // Update password
+  
   await adminModel.findByIdAndUpdate(
     userId,
     {
@@ -333,7 +333,7 @@ export const createExpertsService = async (
 
     const identifier = customAlphabet("0123456789", 3);
 
-    // Check if expert with same email already exists
+    
     if (body.email) {
       const existingExpert = await expertsModel.findOne({
         email: body.email,
@@ -378,7 +378,7 @@ export const updateAExpertsService = async (
   res: Response
 ) => {
   try {
-    // Check if expert exists
+    
     const existingExpert = await expertsModel.findById(id);
     
     if (!existingExpert) {
@@ -389,11 +389,11 @@ export const updateAExpertsService = async (
       };
     }
 
-    // Check if email is being changed and if it's already taken
+    
     if (body.email && body.email !== existingExpert.email) {
       const emailExists = await expertsModel.findOne({ 
         email: body.email,
-        _id: { $ne: id } // Exclude current expert
+        _id: { $ne: id } 
       });
       
       if (emailExists) {
@@ -405,7 +405,7 @@ export const updateAExpertsService = async (
       }
     }
 
-    // Update expert
+    
     const expert = await expertsModel.findByIdAndUpdate(
       id,
       {
@@ -415,8 +415,8 @@ export const updateAExpertsService = async (
         },
       },
       {
-        new: true, // Return updated document
-        runValidators: true, // Run schema validators
+        new: true, 
+        runValidators: true, 
       }
     );
 
@@ -439,7 +439,7 @@ export const deleteAExpertsService = async (id: string, res: Response) => {
     const user = await expertsModel.findById(id);
     if (!user) return errorResponseHandler("Expert not found", httpStatusCode.NOT_FOUND, res);
 
-    // Delete user ----
+    
     await expertsModel.findByIdAndDelete(id)
 
     return {
@@ -467,7 +467,7 @@ export const getAworkshopService = async (
   res: Response
 ) => {
   try {
-    // Check if expert exists
+    
     const existingworkshop = await workshopModel.findById(id);
     
     if (!existingworkshop) {
@@ -501,7 +501,7 @@ export const updateAworkshopService = async (
   res: Response
 ) => {
   try {
-    // Check if workshop exists
+    
     const existingExpert = await workshopModel.findById(id);
     
     if (!existingExpert) {
@@ -512,7 +512,7 @@ export const updateAworkshopService = async (
       };
     }
 
-    // Update workshop
+    
     const workshop = await workshopModel.findByIdAndUpdate(
       id,
       {
@@ -522,8 +522,8 @@ export const updateAworkshopService = async (
         },
       },
       {
-        new: true, // Return updated document
-        runValidators: true, // Run schema validators
+        new: true, 
+        runValidators: true, 
       }
     );
 
@@ -544,7 +544,7 @@ export const updateAworkshopService = async (
 
 
 export const getAllprojectsService = async (payload: any, res: Response) => {
-  // console.log("userIdpayload", userId);
+  
   const user = await projectModel.find();
 
   return {
@@ -561,7 +561,7 @@ export const getAprojectsService = async (
   res: Response
 ) => {
   try {
-    // Check if expert exists
+    
     const projects = await projectModel.findById(id);
     
     if (!projects) {
@@ -595,7 +595,7 @@ export const updateAprojectService = async (
   res: Response
 ) => {
   try {
-    // Check if projects exists
+    
     const existingprojects = await projectModel.findById(id);
     
     if (!existingprojects) {
@@ -606,7 +606,7 @@ export const updateAprojectService = async (
       };
     }
 
-    // Update projects
+    
     const projects = await projectModel.findByIdAndUpdate(
       id,
       {
@@ -616,8 +616,8 @@ export const updateAprojectService = async (
         },
       },
       {
-        new: true, // Return updated document
-        runValidators: true, // Run schema validators
+        new: true, 
+        runValidators: true, 
       }
     );
 
@@ -648,16 +648,16 @@ export const getPlansService = async (payload: any, res: Response) => {
   };
 };
 
-// services/admin/admin-service.ts
+
 
 export const createPlansService = async (payload: any, res: Response) => {
   try {
-    // The payload might be nested - extract the actual data
+    
     const data = payload.body || payload;
     
     console.log("Creating plan with data:", data);
 
-    // Check if plan with same name already exists
+    
     if (data.name) {
       const existingPlan = await creditPlanModel.findOne({ 
         name: data.name.trim() 
@@ -672,7 +672,7 @@ export const createPlansService = async (payload: any, res: Response) => {
       }
     }
 
-    // Validate required fields
+    
     if (!data.name || data.name.trim() === "") {
       return {
         success: false,
@@ -681,7 +681,7 @@ export const createPlansService = async (payload: any, res: Response) => {
       };
     }
 
-    // Create new plan with proper data
+    
     const planData = {
       name: data.name.trim(),
       billingType: data.billingType || "One-time",
@@ -719,7 +719,7 @@ export const updateAPlansService = async (
   res: Response
 ) => {
   try {
-    // Check if plan exists
+    
     const existingPlan = await creditPlanModel.findById(id);
     
     if (!existingPlan) {
@@ -730,7 +730,7 @@ export const updateAPlansService = async (
       };
     }
 
-    // Check if name is being changed and if it's already taken
+    
     if (body.name && body.name !== existingPlan.name) {
       const nameExists = await creditPlanModel.findOne({ 
         name: body.name,
@@ -746,7 +746,7 @@ export const updateAPlansService = async (
       }
     }
 
-    // Check if planId is being changed and if it's already taken
+    
     if (body.planId && body.planId !== existingPlan.planId) {
       const planIdExists = await creditPlanModel.findOne({ 
         planId: body.planId,
@@ -762,16 +762,16 @@ export const updateAPlansService = async (
       }
     }
 
-    // ✅ Handle status toggle - if isActive is provided, use it, otherwise keep existing
+    
     const updateData = {
       ...body,
       updatedAt: new Date(),
     };
 
-    // If only status toggle is needed (isActive field present)
-    // No additional validation needed as isActive is a boolean
+    
+    
 
-    // Update plan
+    
     const plan = await creditPlanModel.findByIdAndUpdate(
       id,
       {
@@ -783,7 +783,7 @@ export const updateAPlansService = async (
       }
     );
 
-    // ✅ Check if status was changed
+    
     const statusChanged = body.isActive !== undefined && body.isActive !== existingPlan.isActive;
     const statusMessage = statusChanged 
       ? ` and ${body.isActive ? 'activated' : 'deactivated'}`
@@ -815,7 +815,7 @@ export const deleteAPlansService = async (id: string, res: Response) => {
       };
     }
 
-    // Delete plan
+    
     await creditPlanModel.findByIdAndDelete(id);
 
     return {
@@ -837,9 +837,9 @@ export const deleteAPlansService = async (id: string, res: Response) => {
 
 
 
-// ============================================
-// GET COMPLETE DASHBOARD DATA
-// ============================================
+
+
+
 export const getDashboardStatsService = async (payload: any, res: Response) => {
     try {
         const now = new Date();
@@ -847,14 +847,14 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-        // ============================================
-        // 1. STATS CARDS
-        // ============================================
+        
+        
+        
 
-        // ✅ Total Users
+        
         const totalUsers = await usersModel.countDocuments();
 
-        // ✅ Users growth (month over month)
+        
         const usersThisMonth = await usersModel.countDocuments({
             createdAt: { $gte: startOfMonth }
         });
@@ -865,12 +865,12 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             ? ((usersThisMonth - usersLastMonth) / usersLastMonth) * 100 
             : usersThisMonth > 0 ? 100 : 0;
 
-        // ✅ Active Projects
+        
         const activeProjects = await projectModel.countDocuments({
             status: { $nin: ['completed', 'cancelled', 'archived'] }
         });
 
-        // ✅ Projects growth
+        
         const projectsThisMonth = await projectModel.countDocuments({
             createdAt: { $gte: startOfMonth },
             status: { $nin: ['cancelled', 'archived'] }
@@ -883,13 +883,13 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             ? ((projectsThisMonth - projectsLastMonth) / projectsLastMonth) * 100 
             : projectsThisMonth > 0 ? 100 : 0;
 
-        // ✅ Active Experts
+        
         const activeExperts = await expertsModel.countDocuments({
            
             isActive: true
         });
 
-        // ✅ Experts growth
+        
         const expertsThisMonth = await expertsModel.countDocuments({
             createdAt: { $gte: startOfMonth },
            
@@ -904,7 +904,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             ? ((expertsThisMonth - expertsLastMonth) / expertsLastMonth) * 100 
             : expertsThisMonth > 0 ? 100 : 0;
 
-        // ✅ Monthly Revenue (from paid invoices and orders)
+        
         const paidInvoices = await InvoiceModel.aggregate([
             {
                 $match: {
@@ -955,7 +955,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             (paidOrders[0]?.total || 0) + 
             (invoiceOrders[0]?.total || 0);
 
-        // ✅ Revenue growth
+        
         const lastMonthInvoices = await InvoiceModel.aggregate([
             {
                 $match: {
@@ -1010,9 +1010,9 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             ? ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
             : monthlyRevenue > 0 ? 100 : 0;
 
-        // ============================================
-        // 2. CHART DATA (Last 12 Months)
-        // ============================================
+        
+        
+        
 
         const chartData = [];
         for (let i = 11; i >= 0; i--) {
@@ -1020,18 +1020,18 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
             const monthName = monthDate.toLocaleString('en-US', { month: 'short' });
 
-            // Users count for this month
+            
             const usersCount = await usersModel.countDocuments({
                 createdAt: { $gte: monthDate, $lt: monthEnd }
             });
 
-            // Projects count for this month
+            
             const projectsCount = await projectModel.countDocuments({
                 createdAt: { $gte: monthDate, $lt: monthEnd },
                 status: { $nin: ['cancelled', 'archived'] }
             });
 
-            // Revenue for this month
+            
             const monthInvoices = await InvoiceModel.aggregate([
                 {
                     $match: {
@@ -1075,13 +1075,13 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         }
 
-        // ============================================
-        // 3. RECENT ACTIVITY
-        // ============================================
+        
+        
+        
 
         const activities: any[] = [];
 
-        // Get recent user registrations
+        
         const recentUsers = await usersModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1097,7 +1097,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent projects
+        
         const recentProjects = await projectModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1120,7 +1120,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent experts
+        
         const recentExperts = await expertsModel.find()
             .sort({ createdAt: -1 })
             .limit(2)
@@ -1136,7 +1136,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent payments
+        
         const recentPayments = await invoiceOrderModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1152,7 +1152,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent plan purchases
+        
         const recentPlanPurchases = await planOrderModel.find()
             .sort({ createdAt: -1 })
             .limit(2)
@@ -1168,7 +1168,7 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Sort activities by time (most recent first) and limit to 10
+        
         activities.sort((a, b) => {
             const timeA = parseInt(a.time);
             const timeB = parseInt(b.time);
@@ -1177,31 +1177,31 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
 
         const recentActivities = activities.slice(0, 10);
 
-        // ============================================
-        // 4. STATUS CARDS
-        // ============================================
+        
+        
+        
 
-        // Projects in review
+        
         const projectsInReview = await projectModel.countDocuments({
             status: 'Pending'
         });
 
-        // Projects completed this month
+        
         const projectsCompletedThisMonth = await projectModel.countDocuments({
             status: 'publish',
             updatedAt: { $gte: startOfMonth }
         });
 
-        // Pending expert applications
+        
         const pendingExperts = await expertsModel.countDocuments({
             isActive: 'false'
         });
 
-        // ============================================
-        // 5. PIE CHART DATA
-        // ============================================
+        
+        
+        
 
-        // User distribution
+        
         const totalUsersCount = await usersModel.countDocuments();
         const newUsersCount = await usersModel.countDocuments({
             createdAt: { $gte: startOfMonth }
@@ -1216,9 +1216,9 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
             { name: 'Inactive Users', value: inactiveUsersCount },
         ];
 
-        // ============================================
-        // RESPONSE
-        // ============================================
+        
+        
+        
 
         return {
             success: true,
@@ -1255,9 +1255,9 @@ export const getDashboardStatsService = async (payload: any, res: Response) => {
     }
 };
 
-// ============================================
-// HELPER FUNCTION: Get Time Ago
-// ============================================
+
+
+
 const getTimeAgo = (date: Date): string => {
     const now = new Date();
     const diffMs = now.getTime() - new Date(date).getTime();
@@ -1283,7 +1283,7 @@ export const getNotificationsService = async (payload: any, res: Response) => {
     try {
         const activities: any[] = [];
 
-        // Get recent user registrations
+        
         const recentUsers = await usersModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1302,7 +1302,7 @@ export const getNotificationsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent projects
+        
         const recentProjects = await projectModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1328,7 +1328,7 @@ export const getNotificationsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent experts
+        
         const recentExperts = await expertsModel.find()
             .sort({ createdAt: -1 })
             .limit(2)
@@ -1347,7 +1347,7 @@ export const getNotificationsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent payments
+        
         const recentPayments = await invoiceOrderModel.find()
             .sort({ createdAt: -1 })
             .limit(3)
@@ -1366,7 +1366,7 @@ export const getNotificationsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Get recent plan purchases
+        
         const recentPlanPurchases = await planOrderModel.find()
             .sort({ createdAt: -1 })
             .limit(2)
@@ -1385,12 +1385,12 @@ export const getNotificationsService = async (payload: any, res: Response) => {
             });
         });
 
-        // Sort by timestamp (most recent first)
+        
         activities.sort((a, b) => {
             return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
         });
 
-        // Limit results
+        
         const limitedActivities = activities.slice(0, 10);
 
         return {
@@ -1423,16 +1423,16 @@ export const getNotificationsService = async (payload: any, res: Response) => {
 
 
 
-// services/admin/admin-service.ts
 
-// services/admin/admin-service.ts
+
+
 
 export const getSubscriptionPlansService = async (payload: any, res: Response) => {
   try {
-    // Check if plans exist
+    
     let plans = await subscriptionPlanModel.find().sort({ displayOrder: 1, price: 1 });
 
-    // If no plans exist, save default plans
+    
     if (plans.length === 0) {
       console.log("📦 Seeding default subscription plans...");
 
@@ -1610,16 +1610,16 @@ export const getSubscriptionPlansService = async (payload: any, res: Response) =
         }
       ];
 
-      // Method 1: Using insertMany with ordered: false to continue on errors
+      
       try {
         await subscriptionPlanModel.insertMany(defaultPlans, { ordered: false });
         console.log("✅ All 6 default subscription plans saved successfully");
       } catch (insertError: any) {
-        // If duplicate key error, some plans may already exist
+        
         if (insertError.code === 11000) {
           console.log("⚠️ Some plans already exist, attempting individual inserts...");
           
-          // Method 2: Individual inserts for remaining plans
+          
           let savedCount = 0;
           for (const plan of defaultPlans) {
             try {
@@ -1645,7 +1645,7 @@ export const getSubscriptionPlansService = async (payload: any, res: Response) =
         }
       }
 
-      // Fetch the newly created plans
+      
       plans = await subscriptionPlanModel.find().sort({ displayOrder: 1, price: 1 });
     }
 
@@ -1663,19 +1663,19 @@ export const getSubscriptionPlansService = async (payload: any, res: Response) =
     };
   }
 };
-// services/admin/admin-service.ts
+
 
 export const createSubscriptionPlansService = async (
   payload: any,
   res: Response
 ) => {
   try {
-    // The payload might be nested - extract the actual data
+    
     const data = payload.body || payload;
 
     console.log("Creating plan with data:", data);
 
-    // Check if plan with same name already exists
+    
     if (data.name) {
       const existingPlan = await subscriptionPlanModel.findOne({
         name: data.name.trim(),
@@ -1690,7 +1690,7 @@ export const createSubscriptionPlansService = async (
       }
     }
 
-    // Validate required fields
+    
     if (!data.name || data.name.trim() === "") {
       return {
         success: false,
@@ -1719,7 +1719,7 @@ export const createSubscriptionPlansService = async (
       };
     }
 
-    // Create new plan with proper data
+    
     const planData = {
       tier: data.tier.trim(),
 
@@ -1785,7 +1785,7 @@ export const updateASubscriptionPlansService = async (
   res: Response
 ) => {
   try {
-    // Check if plan exists
+    
     const existingPlan = await subscriptionPlanModel.findById(id);
     
     if (!existingPlan) {
@@ -1796,7 +1796,7 @@ export const updateASubscriptionPlansService = async (
       };
     }
 
-    // Check if name is being changed and if it's already taken
+    
     if (body.name && body.name !== existingPlan.name) {
       const nameExists = await subscriptionPlanModel.findOne({ 
         name: body.name,
@@ -1812,7 +1812,7 @@ export const updateASubscriptionPlansService = async (
       }
     }
 
-    // Check if planId is being changed and if it's already taken
+    
     if (body.planId && body.planId !== existingPlan.planId) {
       const planIdExists = await subscriptionPlanModel.findOne({ 
         planId: body.planId,
@@ -1828,16 +1828,16 @@ export const updateASubscriptionPlansService = async (
       }
     }
 
-    // ✅ Handle status toggle - if isActive is provided, use it, otherwise keep existing
+    
     const updateData = {
       ...body,
       updatedAt: new Date(),
     };
 
-    // If only status toggle is needed (isActive field present)
-    // No additional validation needed as isActive is a boolean
+    
+    
 
-    // Update plan
+    
     const plan = await subscriptionPlanModel.findByIdAndUpdate(
       id,
       {
@@ -1849,7 +1849,7 @@ export const updateASubscriptionPlansService = async (
       }
     );
 
-    // ✅ Check if status was changed
+    
     const statusChanged = body.isActive !== undefined && body.isActive !== existingPlan.isActive;
     const statusMessage = statusChanged 
       ? ` and ${body.isActive ? 'activated' : 'deactivated'}`
@@ -1881,7 +1881,7 @@ export const deleteASubscriptionPlansService = async (id: string, res: Response)
       };
     }
 
-    // Delete plan
+    
     await subscriptionPlanModel.findByIdAndDelete(id);
 
     return {
@@ -1901,9 +1901,9 @@ export const deleteASubscriptionPlansService = async (id: string, res: Response)
 
 
 
-// ============================================
-// ✅ GET ALL CLIENTS
-// ============================================
+
+
+
 
 export const getAllClientsService = async (payload: any, res: Response) => {
   try {
@@ -1911,22 +1911,22 @@ export const getAllClientsService = async (payload: any, res: Response) => {
 
     let query: any = {};
 
-    // Filter by status
+    
     if (isActive !== undefined) {
       query.isActive = isActive === 'true';
     }
 
-    // Filter by retainer type
+    
     if (retainerType) {
       query.retainerType = retainerType;
     }
 
-    // Filter by manager
+    
     if (managedBy) {
       query.managedBy = managedBy;
     }
 
-    // Search by name or email
+    
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -1956,9 +1956,9 @@ export const getAllClientsService = async (payload: any, res: Response) => {
   }
 };
 
-// ============================================
-// ✅ GET SINGLE CLIENT
-// ============================================
+
+
+
 
 export const getClientByIdService = async (id: string, res: Response) => {
   try {
@@ -1990,9 +1990,9 @@ export const getClientByIdService = async (id: string, res: Response) => {
   }
 };
 
-// ============================================
-// ✅ CREATE CLIENT
-// ============================================
+
+
+
 
 export const createClientService = async (payload: any, res: Response) => {
   try {
@@ -2000,7 +2000,7 @@ export const createClientService = async (payload: any, res: Response) => {
 
     console.log("Create client payload:", body);
 
-    // Validate required fields
+    
     if (!body.name || !body.email) {
       return {
         success: false,
@@ -2009,7 +2009,7 @@ export const createClientService = async (payload: any, res: Response) => {
       };
     }
 
-    // Check if client with same email already exists
+    
     if (body.email) {
       const existingClient = await clientsModel.findOne({
         email: body.email.toLowerCase()
@@ -2024,7 +2024,7 @@ export const createClientService = async (payload: any, res: Response) => {
       }
     }
 
-    // Create client
+    
     const client = await clientsModel.create({
       name: body.name,
       email: body.email.toLowerCase(),
@@ -2056,13 +2056,13 @@ export const createClientService = async (payload: any, res: Response) => {
   }
 };
 
-// ============================================
-// ✅ UPDATE CLIENT
-// ============================================
+
+
+
 
 export const updateClientService = async (id: string, body: any, res: Response) => {
   try {
-    // Check if client exists
+    
     const existingClient = await clientsModel.findById(id);
     
     if (!existingClient) {
@@ -2073,7 +2073,7 @@ export const updateClientService = async (id: string, body: any, res: Response) 
       };
     }
 
-    // Check if email is being changed and if it's already taken
+    
     if (body.email && body.email !== existingClient.email) {
       const emailExists = await clientsModel.findOne({ 
         email: body.email.toLowerCase(),
@@ -2089,12 +2089,12 @@ export const updateClientService = async (id: string, body: any, res: Response) 
       }
     }
 
-    // Prepare update data
+    
     const updateData: any = {
       updatedAt: new Date()
     };
 
-    // Only update fields that are provided
+    
     if (body.name) updateData.name = body.name;
     if (body.email) updateData.email = body.email.toLowerCase();
     if (body.accountType) updateData.accountType = body.accountType;
@@ -2106,7 +2106,7 @@ export const updateClientService = async (id: string, body: any, res: Response) 
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.managedBy !== undefined) updateData.managedBy = body.managedBy;
 
-    // Update client
+    
     const client = await clientsModel.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -2131,9 +2131,9 @@ export const updateClientService = async (id: string, body: any, res: Response) 
   }
 };
 
-// ============================================
-// ✅ DELETE CLIENT
-// ============================================
+
+
+
 
 export const deleteClientService = async (id: string, res: Response) => {
   try {
@@ -2147,7 +2147,7 @@ export const deleteClientService = async (id: string, res: Response) => {
       };
     }
 
-    // Delete client
+    
     await clientsModel.findByIdAndDelete(id);
 
     return {
@@ -2165,9 +2165,9 @@ export const deleteClientService = async (id: string, res: Response) => {
   }
 };
 
-// ============================================
-// ✅ TOGGLE CLIENT STATUS
-// ============================================
+
+
+
 
 export const toggleClientStatusService = async (id: string, body: any, res: Response) => {
   try {
@@ -2210,9 +2210,9 @@ export const toggleClientStatusService = async (id: string, body: any, res: Resp
   }
 };
 
-// ============================================
-// ✅ GET CLIENTS BY MANAGER
-// ============================================
+
+
+
 
 export const getClientsByManagerService = async (managerId: string, res: Response) => {
   try {
@@ -2238,9 +2238,9 @@ export const getClientsByManagerService = async (managerId: string, res: Respons
   }
 };
 
-// ============================================
-// ✅ GET CLIENTS STATS
-// ============================================
+
+
+
 
 export const getClientsStatsService = async (res: Response) => {
   try {
@@ -2248,12 +2248,12 @@ export const getClientsStatsService = async (res: Response) => {
     const activeClients = await clientsModel.countDocuments({ isActive: true });
     const inactiveClients = await clientsModel.countDocuments({ isActive: false });
 
-    // Get retainer type distribution
+    
     const retainerDistribution = await clientsModel.aggregate([
       { $group: { _id: '$retainerType', count: { $sum: 1 } } }
     ]);
 
-    // Get total lifetime value
+    
     const totalLifetimeValue = await clientsModel.aggregate([
       { $group: { _id: null, total: { $sum: '$lifetimeValue' } } }
     ]);

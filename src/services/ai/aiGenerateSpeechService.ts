@@ -1,17 +1,17 @@
-// services/ai/speech/aiGenerateSpeechService.ts
+
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { calculateSpeechCost, isProviderSupported } from "../../config/ai-speech-config";
 import { calculateDraftCost, modelExists as checkModelExists } from "../../config/ai-cost-config";
 
-// ============================================
-// INITIALIZE CLIENTS
-// ============================================
+
+
+
 
 let openai: OpenAI | null = null;
 let anthropic: Anthropic | null = null;
 
-// Initialize OpenAI
+
 if (process.env.OPENAI_API_KEY) {
     try {
         openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -23,7 +23,7 @@ if (process.env.OPENAI_API_KEY) {
     console.warn("⚠️ OPENAI_API_KEY not set. OpenAI speech services will not be available.");
 }
 
-// Initialize Anthropic (Claude)
+
 if (process.env.ANTHROPIC_API_KEY) {
     try {
         anthropic = new Anthropic({
@@ -40,12 +40,12 @@ if (process.env.ANTHROPIC_API_KEY) {
     console.warn("⚠️ ANTHROPIC_API_KEY not set. Claude services will not be available.");
 }
 
-// Check if any AI service is available
+
 const isSpeechEnabled = !!(openai || anthropic);
 
-// ============================================
-// ✅ MODEL NAMES
-// ============================================
+
+
+
 
 const ANTHROPIC_MODELS = {
     CLAUDE_SONNET_4_6: "claude-sonnet-4-6",
@@ -57,9 +57,9 @@ const OPENAI_MODELS = {
     GPT_4O_MINI: "gpt-4o-mini",
 };
 
-// ============================================
-// ✅ SMART ROUTER
-// ============================================
+
+
+
 
 interface RouterDecision {
     provider: 'openai' | 'anthropic';
@@ -92,12 +92,12 @@ const smartRouter = (params: {
         isBulk
     } = params;
 
-    // ✅ Check if preferred provider is supported
+    
     if (preferredProvider && !isProviderSupported(preferredProvider)) {
         console.warn(`⚠️ Provider ${preferredProvider} is not supported. Falling back to auto-selection.`);
     }
 
-    // ✅ User explicitly requested OpenAI
+    
     if (preferredProvider === 'openai' && openai) {
         return {
             provider: 'openai',
@@ -107,7 +107,7 @@ const smartRouter = (params: {
         };
     }
 
-    // ✅ User explicitly requested Anthropic (Claude)
+    
     if (preferredProvider === 'anthropic' && anthropic) {
         return {
             provider: 'anthropic',
@@ -117,7 +117,7 @@ const smartRouter = (params: {
         };
     }
 
-    // ✅ Bulk processing
+    
     if (isBulk) {
         return {
             provider: 'openai',
@@ -127,18 +127,18 @@ const smartRouter = (params: {
         };
     }
 
-    // ✅ Auto-selection logic
+    
     let claudeScore = 0;
     let openaiScore = 0;
 
-    // Claude - Best for narrative, authoritative speech
+    
     if (authority > 70) claudeScore += 20;
     if (narrativeDepth > 70) claudeScore += 30;
     if (academicRigor > 70) claudeScore += 20;
     if (fileContent && fileContent.length > 5000) claudeScore += 15;
     if (recordingDuration && Number(recordingDuration) > 120) claudeScore += 15;
 
-    // OpenAI - Best for clarity and accessibility
+    
     if (clarity > 70) openaiScore += 30;
     if (accessibility > 70) openaiScore += 20;
     if (authority < 50 && clarity > 70) openaiScore += 20;
@@ -152,7 +152,7 @@ const smartRouter = (params: {
     if (!anthropic) claudeScore = -1;
     if (!openai) openaiScore = -1;
 
-    // ✅ Decision
+    
     if (claudeScore > openaiScore && anthropic) {
         let model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
         let reason = `Claude Sonnet 4.6 better for speech (Authority=${authority}, Narrative=${narrativeDepth})`;
@@ -207,9 +207,9 @@ const smartRouter = (params: {
     }
 };
 
-// ============================================
-// INTERFACES
-// ============================================
+
+
+
 
 interface SpeechParams {
     title: string;
@@ -264,9 +264,9 @@ interface SpeechResult {
     };
 }
 
-// ============================================
-// GENERATE TEXT WITH CLAUDE
-// ============================================
+
+
+
 
 const generateTextWithClaude = async (params: {
     title: string;
@@ -388,9 +388,9 @@ Generate the complete speech:`;
     }
 };
 
-// ============================================
-// GENERATE TEXT WITH OPENAI
-// ============================================
+
+
+
 
 const generateTextWithOpenAI = async (params: {
     title: string;
@@ -469,9 +469,9 @@ Generate the complete speech:`;
     }
 };
 
-// ============================================
-// ✅ TTS CHUNKING (Fixes 4096 char limit)
-// ============================================
+
+
+
 
 const MAX_TTS_CHARS = 4096;
 
@@ -502,9 +502,9 @@ const splitTextForTTS = (text: string, maxChars: number = MAX_TTS_CHARS): string
     return chunks.filter((c) => c.length > 0);
 };
 
-// ============================================
-// ✅ GENERATE WITH OPENAI TTS (Chunked)
-// ============================================
+
+
+
 const generateWithOpenAITTS = async (
     text: string
 ): Promise<{ audioData: Buffer; duration: number; model: string; format: string; charCount: number; cost: any; tokensUsed: any }> => {
@@ -533,7 +533,7 @@ const generateWithOpenAITTS = async (
             response_format: "mp3",
         });
         
-        // ✅ FIX: Properly convert ArrayBuffer to Buffer
+        
         const arrayBuffer = await response.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         const buffer = Buffer.from(uint8Array.buffer, uint8Array.byteOffset, uint8Array.byteLength);
@@ -550,7 +550,7 @@ const generateWithOpenAITTS = async (
 
     const charCount = text.length;
 
-    // ✅ Use calculateDraftCost (same as writing)
+    
     const inputTokens = Math.round(charCount / 4);
     const outputTokens = 0;
     const cost = calculateDraftCost(model, inputTokens, outputTokens);
@@ -570,9 +570,9 @@ const generateWithOpenAITTS = async (
     };
 };
 
-// ============================================
-// GENERATE WITH CLAUDE + TTS
-// ============================================
+
+
+
 
 const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> => {
     if (!anthropic) {
@@ -621,7 +621,7 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
 
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    // ✅ Calculate Claude cost using calculateDraftCost (same as writing)
+    
     const inputTokens = Math.round((speechText.length / 4) * 0.3);
     const outputTokens = Math.round(speechText.length / 4);
     const claudeCost = calculateDraftCost(routerDecision.model, inputTokens, outputTokens);
@@ -667,9 +667,9 @@ const generateWithClaude = async (params: SpeechParams): Promise<SpeechResult> =
     };
 };
 
-// ============================================
-// GENERATE WITH OPENAI + TTS
-// ============================================
+
+
+
 
 const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> => {
     if (!openai) {
@@ -714,7 +714,7 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
 
     const audioResult = await generateWithOpenAITTS(speechText);
 
-    // ✅ Calculate OpenAI cost using calculateDraftCost (same as writing)
+    
     const inputTokens = Math.round((speechText.length / 4) * 0.3);
     const outputTokens = Math.round(speechText.length / 4);
     const openAICost = calculateDraftCost(routerDecision.model, inputTokens, outputTokens);
@@ -760,9 +760,9 @@ const generateWithOpenAI = async (params: SpeechParams): Promise<SpeechResult> =
     };
 };
 
-// ============================================
-// MAIN GENERATION FUNCTION
-// ============================================
+
+
+
 
 export const aiGenerateSpeechService = async (params: SpeechParams): Promise<SpeechResult> => {
     const { title, preferredProvider, authority, clarity, academicRigor, accessibility, narrativeDepth, fileContent, recordingDuration, isBulk } = params;
@@ -777,7 +777,7 @@ export const aiGenerateSpeechService = async (params: SpeechParams): Promise<Spe
         );
     }
 
-    // ✅ Validate provider
+    
     if (preferredProvider && !isProviderSupported(preferredProvider)) {
         console.warn(`⚠️ Provider ${preferredProvider} is not supported. Using auto-selection.`);
     }
@@ -814,9 +814,9 @@ export const aiGenerateSpeechService = async (params: SpeechParams): Promise<Spe
     return result;
 };
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
+
+
+
 
 export const getAvailableProviders = (): string[] => {
     const providers: string[] = [];

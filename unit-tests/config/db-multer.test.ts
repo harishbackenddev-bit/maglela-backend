@@ -23,7 +23,7 @@ describe("connectDB", () => {
     delete process.env.MONGO_URL;
     vi.spyOn(mongoose, "connect").mockResolvedValue(mongoose as any);
     await connectDB();
-    // NOTE: process.exit is mocked here, so code after it still runs; in production the process stops.
+    
     expect(exit).toHaveBeenCalledWith(1);
   });
   it("retries every 5s and exits after 5 failed attempts", async () => {

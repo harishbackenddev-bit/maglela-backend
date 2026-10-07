@@ -1,4 +1,4 @@
-// controllers/schedule/schedule.controller.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../../lib/constant";
 import { errorParser } from "../../../lib/errors/error-response-handler";
@@ -15,11 +15,11 @@ import {
     getAvailabilityByUserService, getallAvailabilitiesService
 } from "../../../services/admin/schedule/schedule";
 
-// ============================================
-// EVENT CONTROLLERS
-// ============================================
 
-// 1. GET ALL EVENTS
+
+
+
+
 export const getEvents = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).currentUser;
@@ -46,7 +46,7 @@ export const getEvents = async (req: Request, res: Response) => {
     }
 };
 
-// 2. GET EVENTS BY MONTH
+
 export const getEventsByMonth = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).currentUser;
@@ -72,7 +72,7 @@ export const getEventsByMonth = async (req: Request, res: Response) => {
     }
 };
 
-// 3. GET TODAY'S EVENTS
+
 export const getTodayEvents = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).currentUser;
@@ -92,7 +92,7 @@ export const getTodayEvents = async (req: Request, res: Response) => {
     }
 };
 
-// 4. GET EVENT BY ID
+
 export const getEventById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -112,7 +112,7 @@ export const getEventById = async (req: Request, res: Response) => {
     }
 };
 
-// 5. CREATE EVENT
+
 export const createEvent = async (req: Request, res: Response) => {
     try {
 
@@ -135,7 +135,7 @@ export const createEvent = async (req: Request, res: Response) => {
     }
 };
 
-// 6. UPDATE EVENT
+
 export const updateEvent = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -157,7 +157,7 @@ export const updateEvent = async (req: Request, res: Response) => {
     }
 };
 
-// 7. DELETE EVENT
+
 export const deleteEvent = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -178,11 +178,11 @@ export const deleteEvent = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// AVAILABILITY CONTROLLERS
-// ============================================
 
-// 1. GET AVAILABILITY
+
+
+
+
 export const getAvailability = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).currentUser;
@@ -223,7 +223,7 @@ export const getallAvailabilities = async (req: Request, res: Response) => {
 
 
 
-// 2. CREATE OR UPDATE AVAILABILITY
+
 export const createOrUpdateAvailability = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).currentUser;
@@ -248,7 +248,7 @@ export const createOrUpdateAvailability = async (req: Request, res: Response) =>
     }
 };
 
-// 3. GET AVAILABILITY BY USER
+
 export const getAvailabilityByUser = async (req: Request, res: Response) => {
     try {
         const { email } = req.params;

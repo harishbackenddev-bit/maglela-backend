@@ -2,22 +2,22 @@ import nodemailer from 'nodemailer';
 import { configDotenv } from "dotenv";
 
 configDotenv();
-// At the top of your mail.ts file
+
 console.log('SMTP_USER:', process.env.SMTP_USER);
 console.log('SMTP_PASSWORD:', process.env.SMTP_PASSWORD ? '***SET***' : 'NOT SET');
 console.log('SMTP_HOST:', process.env.SMTP_HOST);
-// Create transporter
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  secure: process.env.SMTP_SECURE === 'true', 
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
 });
 
-// Verify connection
+
 transporter.verify((error, success) => {
   if (error) {
     console.log('SMTP connection error:', error);
@@ -180,7 +180,7 @@ export const sendSupportEmailToAdmin = async (payload: {
   try {
     const info = await transporter.sendMail({
       from: process.env.COMPANY_EMAIL || process.env.SMTP_USER,
-      to: "support@magalela.com", // or process.env.SUPPORT_EMAIL
+      to: "support@magalela.com", 
       replyTo: payload.email,
       subject: `Support Request: ${payload.subject}`,
       html: `

@@ -1,8 +1,8 @@
-// services/product/product-mapping.service.ts
 
-// ✅ Map product IDs directly to PDF files
+
+
 const PRODUCT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
-  // Strategy Products
+  
   '1': {
     fileUrl: '/uploads/pdfs/1-media-strategy-playbook.pdf',
     fileName: 'Media-Strategy-Playbook.pdf'
@@ -16,7 +16,7 @@ const PRODUCT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
     fileName: 'Stakeholder-Mapping-Toolkit.pdf'
   },
   
-  // Templates
+  
   '4': {
     fileUrl: '/uploads/pdfs/4-pr-pitch-deck-template.pdf',
     fileName: 'PR-Pitch-Deck-Template.pdf'
@@ -30,7 +30,7 @@ const PRODUCT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
     fileName: 'Executive-Messaging-Framework.pdf'
   },
   
-  // Content
+  
   '5': {
     fileUrl: '/uploads/pdfs/5-content-calendar.pdf',
     fileName: 'Institutional-Content-Calendar.pdf'
@@ -41,16 +41,12 @@ const PRODUCT_PDF_MAP: Record<string, { fileUrl: string; fileName: string }> = {
   }
 };
 
-/**
- * Get PDF file info by product ID
- */
+
 export const getPDFFileInfoById = (productId: string): { fileUrl: string; fileName: string } | null => {
   return PRODUCT_PDF_MAP[productId] || null;
 };
 
-/**
- * Get PDF file info for multiple products
- */
+
 export const getPDFFileInfoBulk = (products: Array<{ productId: string }>) => {
   return products.map(product => {
     const fileInfo = getPDFFileInfoById(product.productId);
@@ -61,9 +57,7 @@ export const getPDFFileInfoBulk = (products: Array<{ productId: string }>) => {
   });
 };
 
-/**
- * Get product details with PDF info
- */
+
 export const getProductWithPDFInfo = (productId: string, productTitle: string) => {
   const fileInfo = getPDFFileInfoById(productId);
   return {

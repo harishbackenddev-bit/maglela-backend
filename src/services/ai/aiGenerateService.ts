@@ -1,4 +1,4 @@
-// services/ai/aiGenerateService.ts
+
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { 
@@ -10,11 +10,11 @@ import {
     modelExists
 } from "../../config/ai-cost-config";
 
-// ✅ Initialize clients conditionally
+
 let openai: OpenAI | null = null;
 let anthropic: Anthropic | null = null;
 
-// Initialize OpenAI if API key is available
+
 if (process.env.OPENAI_API_KEY) {
     try {
         openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -26,7 +26,7 @@ if (process.env.OPENAI_API_KEY) {
     console.warn("⚠️ OPENAI_API_KEY not set. OpenAI services will not be available.");
 }
 
-// Initialize Anthropic if API key is available
+
 if (process.env.ANTHROPIC_API_KEY) {
     try {
         anthropic = new Anthropic({ 
@@ -43,12 +43,12 @@ if (process.env.ANTHROPIC_API_KEY) {
     console.warn("⚠️ ANTHROPIC_API_KEY not set. Claude services will not be available.");
 }
 
-// ✅ Check if any AI service is available
+
 const isAIEnabled = !!(openai || anthropic);
 
-// ============================================
-// ✅ LATEST MODEL NAMES
-// ============================================
+
+
+
 
 const ANTHROPIC_MODELS = {
     CLAUDE_SONNET_4_6: "claude-sonnet-4-6",
@@ -59,9 +59,9 @@ const OPENAI_MODELS = {
     GPT_4O_MINI: "gpt-4o-mini",
 };
 
-// ============================================
-// SMART ROUTER - Decides which AI to use
-// ============================================
+
+
+
 
 interface RouterDecision {
     provider: 'openai' | 'anthropic';
@@ -81,7 +81,7 @@ const smartRouter = (params: {
 }): RouterDecision => {
     const { type, tone, fileContent, title, includeOutline, preferredModel, isBulk } = params;
 
-    // ✅ If user explicitly prefers a model, use it
+    
     if (preferredModel === 'openai' && openai) {
         return {
             provider: 'openai',
@@ -99,23 +99,23 @@ const smartRouter = (params: {
         };
     }
 
-    // ✅ Check content characteristics
+    
     const contentLength = fileContent.length;
     const hasComplexTerms = /(research|analysis|framework|methodology|policy|strategy|implementation|evaluation|assessment|recommendation)/i.test(fileContent);
     const hasTechnicalContent = /(algorithm|model|data|dataset|statistical|correlation|regression|hypothesis|variable|parameter)/i.test(fileContent);
     const hasData = /\d+%|\d+\.\d+|\d+,\d+|\$[\d,]+|[0-9]{4}/.test(fileContent);
 
-    // ✅ Determine document type
+    
     const complexTypes = ['policy-brief', 'impact-report', 'research-paper', 'speech'];
     const simpleTypes = ['summary', 'press-release', 'blog-post', 'media-story'];
     const isComplexType = complexTypes.includes(type);
     const isSimpleType = simpleTypes.includes(type);
 
-    // ✅ Scoring
+    
     let claudeScore = 0;
     let openaiScore = 0;
 
-    // Claude Sonnet 4.6 - Best for complex, high-quality content
+    
     if (isComplexType) claudeScore += 35;
     if (contentLength > 5000) claudeScore += 20;
     if (hasComplexTerms) claudeScore += 15;
@@ -126,7 +126,7 @@ const smartRouter = (params: {
     if (type === 'policy-brief') claudeScore += 25;
     if (type === 'impact-report') claudeScore += 20;
 
-    // GPT-4o - Best for summaries, structured tasks
+    
     if (isSimpleType) openaiScore += 30;
     if (contentLength < 3000) openaiScore += 20;
     if (type === 'summary') openaiScore += 30;
@@ -137,7 +137,7 @@ const smartRouter = (params: {
     if (type === 'media-story') openaiScore += 15;
     if (type === 'blog-post') openaiScore += 15;
 
-    // ✅ Bulk processing - Use cheapest models
+    
     if (isBulk) {
         return {
             provider: 'openai',
@@ -147,11 +147,11 @@ const smartRouter = (params: {
         };
     }
 
-    // ✅ Check availability
+    
     if (!anthropic) claudeScore = -1;
     if (!openai) openaiScore = -1;
 
-    // ✅ Decision
+    
     if (claudeScore > openaiScore && anthropic) {
         let model = ANTHROPIC_MODELS.CLAUDE_SONNET_4_6;
         let reason = `Claude Sonnet 4.6 better suited for ${type} (score: ${claudeScore})`;
@@ -196,9 +196,9 @@ const smartRouter = (params: {
     }
 };
 
-// ============================================
-// INTERFACES
-// ============================================
+
+
+
 
 interface GenerateParams {
     title: string;
@@ -234,9 +234,9 @@ interface GenerateResult {
     };
 }
 
-// ============================================
-// PROMPT GENERATORS
-// ============================================
+
+
+
 
 const getSystemPrompt = (type: string, tone: string): string => {
     const toneInstructions: Record<string, string> = {
@@ -286,9 +286,9 @@ const getUserPrompt = (content: string, title: string, type: string, includeOutl
     return prompt;
 };
 
-// ============================================
-// GENERATE WITH OPENAI
-// ============================================
+
+
+
 
 const generateWithOpenAI = async (
     content: string,
@@ -324,9 +324,9 @@ const generateWithOpenAI = async (
     };
 };
 
-// ============================================
-// GENERATE WITH CLAUDE
-// ============================================
+
+
+
 
 const generateWithClaude = async (
     content: string,
@@ -362,8 +362,8 @@ const generateWithClaude = async (
     } catch (error: any) {
         console.error("Claude API Error:", error);
         
-        // ✅ No fallback models since we removed claude-opus-4-8
-        // Just throw the error
+        
+        
         
         if (error.status === 401) {
             throw new Error("Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY.");
@@ -372,9 +372,9 @@ const generateWithClaude = async (
     }
 };
 
-// ============================================
-// MAIN GENERATION FUNCTION
-// ============================================
+
+
+
 
 export const aiGenerateService = async (params: GenerateParams): Promise<GenerateResult> => {
     const { title, type, tone, includeOutline, fileContent, preferredModel } = params;
@@ -442,7 +442,7 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
 
         const wordCount = content.split(/\s+/).length;
 
-        // ✅ Calculate cost with model and tokens
+        
         console.log("💰 Calculating cost with:", {
             model: modelUsed,
             inputTokens,
@@ -481,9 +481,9 @@ export const aiGenerateService = async (params: GenerateParams): Promise<Generat
     }
 };
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
+
+
+
 
 const extractOutline = (content: string): string | undefined => {
     const lines = content.split('\n');
@@ -509,9 +509,9 @@ const extractOutline = (content: string): string | undefined => {
     return outlineLines.length > 0 ? outlineLines.join('\n') : undefined;
 };
 
-// ============================================
-// EXPORT UTILITY FUNCTIONS
-// ============================================
+
+
+
 
 export const getAvailableProviders = (): string[] => {
     const providers: string[] = [];

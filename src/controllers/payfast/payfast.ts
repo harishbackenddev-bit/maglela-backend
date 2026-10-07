@@ -1,4 +1,4 @@
-// controllers/payfast/payfast.controller.ts
+
 import { Request, Response } from "express";
 import { httpStatusCode } from "../../lib/constant";
 import { errorParser } from "../../lib/errors/error-response-handler";
@@ -12,15 +12,15 @@ import {
 import { orderModel } from "../../models/orders/order-schema";
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url'; // ✅ Import for ES modules
+import { fileURLToPath } from 'url'; 
 
-// ✅ Get __dirname equivalent in ES modules
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================
-// INITIATE PAYMENT CONTROLLER
-// ============================================
+
+
+
 export const initiatePayment = async (req: Request, res: Response) => {
   try {
     const response: any = await initiatePaymentService(req.body, req, res);
@@ -39,9 +39,9 @@ export const initiatePayment = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// HANDLE PAYFAST NOTIFICATION CONTROLLER
-// ============================================
+
+
+
 export const handlePayfastNotification = async (req: Request, res: Response) => {
   try {
     const response = await handlePayfastNotificationService(req.body, res);
@@ -60,9 +60,9 @@ export const handlePayfastNotification = async (req: Request, res: Response) => 
   }
 };
 
-// ============================================
-// GET ORDER PAYMENT STATUS CONTROLLER
-// ============================================
+
+
+
 export const getOrderPaymentStatus = async (req: Request, res: Response) => {
   try {
     const response = await getOrderPaymentStatusService(req.params.orderId, req.body, res);
@@ -81,9 +81,9 @@ export const getOrderPaymentStatus = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET ORDER CONTROLLER
-// ============================================
+
+
+
 export const getOrder = async (req: Request, res: Response) => {
   try {
     const response = await getOrderService(req.params.orderId, req.body, res);
@@ -102,9 +102,9 @@ export const getOrder = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET USER ORDERS CONTROLLER
-// ============================================
+
+
+
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
@@ -133,9 +133,9 @@ export const getUserOrders = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// DOWNLOAD PRODUCT CONTROLLER
-// ============================================
+
+
+
 export const downloadProduct = async (req: Request, res: Response) => {
   try {
     const { orderNumber, productId } = req.params;
@@ -156,7 +156,7 @@ export const downloadProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if order is paid
+    
     if (order.status !== 'paid' && order.status !== 'completed') {
       return res.status(httpStatusCode.FORBIDDEN).json({
         success: false,
@@ -165,7 +165,7 @@ export const downloadProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the item in order by product ID
+    
     const orderItem = order.items.find(
       (item: any) => item.productId === productId
     );
@@ -177,7 +177,7 @@ export const downloadProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // Get file info from order item
+    
     const fileUrl = orderItem.fileUrl;
     const fileName = orderItem.fileName || `${orderItem.title}.pdf`;
 
@@ -188,12 +188,12 @@ export const downloadProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Construct full file path using __dirname
+    
     const fullPath = path.join(__dirname, '../../public', fileUrl);
     
-    console.log('📁 Looking for file at:', fullPath); // Debug log
+    console.log('📁 Looking for file at:', fullPath); 
     
-    // Check if file exists
+    
     if (!fs.existsSync(fullPath)) {
       return res.status(httpStatusCode.NOT_FOUND).json({
         success: false,
@@ -202,7 +202,7 @@ export const downloadProduct = async (req: Request, res: Response) => {
       });
     }
 
-    // Send file for download
+    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Length', fs.statSync(fullPath).size);
@@ -220,9 +220,9 @@ export const downloadProduct = async (req: Request, res: Response) => {
 };
 
 
-// ============================================
-// CANCEL ORDER CONTROLLER - SIMPLIFIED
-// ============================================
+
+
+
 export const cancelOrder = async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
@@ -234,7 +234,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // Find order by ID or orderNumber
+    
     const order = await orderModel.findOne({
       $or: [
         { _id: orderId },
@@ -249,7 +249,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if order can be cancelled
+    
     if (order.status === 'paid' || order.status === 'completed') {
       return res.status(httpStatusCode.BAD_REQUEST).json({
         success: false,
@@ -264,7 +264,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Simply update status to cancelled
+    
     const updatedOrder = await orderModel.findByIdAndUpdate(
       order._id,
       {

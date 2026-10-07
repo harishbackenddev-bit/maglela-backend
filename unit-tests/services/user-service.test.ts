@@ -132,12 +132,7 @@ describe("verifyPasswordResetService", () => {
   const token = (id = "u1", opts: any = { expiresIn: "1h" }) => jwt.sign({ id }, process.env.JWT_SECRET!, opts);
   const call = (payload: any) => errOf(verifyPasswordResetService(payload, res));
 
-  /**
-   * KNOWN BUG (src/services/user/user.ts): the function's own try/catch catches the 400/404 errors it throws
-   * and re-wraps them with errorResponseHandler(error.message, 500). The client therefore gets HTTP 500 with
-   * a JSON *string* as message instead of the intended 400/404 + readable message.
-   * The error-path tests below are `it.fails` until that catch block re-throws the original error.
-   */
+  
   it("current behaviour: validation errors are re-wrapped as 500 (bug)", async () => {
     const e = await call({});
     expect(e.code).toBe(500);

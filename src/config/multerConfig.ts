@@ -26,12 +26,12 @@ const profileFileFilter = (req: any, file: any, cb: any) => {
 
 export const uploadProfile = multer({
   storage: profileStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: profileFileFilter,
 });
 
 
-// Document Upload
+
 const documentUploadDir = "public/uploads/documents";
 
 if (!fs.existsSync(documentUploadDir)) {
@@ -78,7 +78,7 @@ const documentFileFilter = (req: any, file: any, cb: any) => {
 export const uploadDocument = multer({
   storage: documentStorage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
+    fileSize: 10 * 1024 * 1024, 
   },
   fileFilter: documentFileFilter,
 });

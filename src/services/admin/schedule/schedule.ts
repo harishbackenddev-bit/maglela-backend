@@ -1,14 +1,14 @@
-// services/schedule/schedule.service.ts
+
 import { EventModel } from "../../../models/schedule/event-schema";
 import { AvailabilityModel } from "../../../models/schedule/availability-schema";
 import { Types } from "mongoose";
 
 import { adminModel } from "../../../models/admin/admin-schema";
-// ============================================
-// EVENT SERVICES
-// ============================================
 
-// 1. GET ALL EVENTS
+
+
+
+
 export const getEventsService = async (
     userId: string,
     startDate?: string,
@@ -63,7 +63,7 @@ export const getEventsService = async (
     }
 };
 
-// 2. GET EVENTS BY MONTH
+
 export const getEventsByMonthService = async (
     userId: string,
     month: number,
@@ -119,7 +119,7 @@ console.log("endDate",endDate);
     }
 };
 
-// 3. GET TODAY'S EVENTS
+
 export const getTodayEventsService = async (userId: string) => {
     try {
         const today = new Date();
@@ -162,7 +162,7 @@ export const getTodayEventsService = async (userId: string) => {
     }
 };
 
-// 4. GET EVENT BY ID
+
 export const getEventByIdService = async (id: string) => {
     try {
         const event = await EventModel.findById(id);
@@ -202,7 +202,7 @@ export const getEventByIdService = async (id: string) => {
     }
 };
 
-// 5. CREATE EVENT
+
 export const createEventService = async (
     payload: any,
     userId: string,
@@ -229,7 +229,7 @@ export const createEventService = async (
             };
         }
 
-        // Get user email using userId
+        
         const user = await adminModel.findById(userId).select('email');
 
         if (!user) {
@@ -279,7 +279,7 @@ export const createEventService = async (
     }
 };
 
-// 6. UPDATE EVENT
+
 export const updateEventService = async (id: string, payload: any) => {
     try {
         const event = await EventModel.findById(id);
@@ -320,7 +320,7 @@ export const updateEventService = async (id: string, payload: any) => {
     }
 };
 
-// 7. DELETE EVENT
+
 export const deleteEventService = async (id: string) => {
     try {
         const event = await EventModel.findByIdAndDelete(id);
@@ -347,11 +347,11 @@ export const deleteEventService = async (id: string) => {
     }
 };
 
-// ============================================
-// AVAILABILITY SERVICES
-// ============================================
 
-// 1. GET AVAILABILITY
+
+
+
+
 export const getAvailabilityService = async (userId: string) => {
     try {
         const availability = await AvailabilityModel.findOne({
@@ -416,7 +416,7 @@ export const getallAvailabilitiesService = async (payload: any, res: Response) =
       const startDate = new Date(availability.blockStartDate);
       const endDate = new Date(availability.blockEndDate);
 
-      // Include both start and end dates
+      
       const currentDate = new Date(startDate);
 
       while (currentDate <= endDate) {
@@ -446,7 +446,7 @@ export const getallAvailabilitiesService = async (payload: any, res: Response) =
   }
 };
 
-// 2. CREATE OR UPDATE AVAILABILITY
+
 export const createOrUpdateAvailabilityService = async (
     payload: any,
     userId: string
@@ -470,7 +470,7 @@ export const createOrUpdateAvailabilityService = async (
             isActive = true
         } = payload;
 
-        // Get user email using userId
+        
         const user = await adminModel.findById(userId).select("email");
 
         if (!user) {
@@ -561,7 +561,7 @@ export const createOrUpdateAvailabilityService = async (
     }
 };
 
-// 3. GET AVAILABILITY BY USER EMAIL
+
 export const getAvailabilityByUserService = async (email: string) => {
     try {
         const availability = await AvailabilityModel.findOne({

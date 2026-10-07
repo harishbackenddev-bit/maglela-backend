@@ -16,7 +16,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 
 
-//Auth Controllers
+
 export const login = async (req: Request, res: Response) => {
     try {
 

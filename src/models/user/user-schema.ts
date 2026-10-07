@@ -45,7 +45,7 @@ const usersSchema = new Schema(
       default: null,
     },
 
-    // Existing
+    
     accountType: {
       type: String,
       default: null,
@@ -81,7 +81,7 @@ const usersSchema = new Schema(
       default: null,
     },
 
-    // New fields
+    
     profileType: {
       type: String,
       default: null,
@@ -117,17 +117,17 @@ const usersSchema = new Schema(
       default: false,
     },
 
-    // ============================================
-    // ✅ CREDITS & PLAN FIELDS (ONLY ESSENTIAL)
-    // ============================================
+    
+    
+    
 
-    // Current credit balance
+    
     credits: {
       type: Number,
       default: 0,
     },
 
-    // Current plan type
+    
     plan: {
       type: String,
       enum: ['free', 'basic', 'pro', 'enterprise'],
@@ -140,7 +140,7 @@ const usersSchema = new Schema(
       default: 'free',
     },
 
-    // Last purchase details (for quick reference)
+    
     lastCreditPurchase: {
       type: Date,
       default: null,

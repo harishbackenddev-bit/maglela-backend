@@ -1,4 +1,4 @@
-// routes/index.ts or routes/payfast.routes.ts
+
 import { Router } from "express";
 import {
     login, signup, userdata, forgotPassword, getDashboardStats, deleteAUser, updateAUser, twoFactorAuth, profileupdate, getNotificationPreferences, updateNotificationPreferences,
@@ -44,9 +44,9 @@ import {
 
 const router = Router();
 
-// ============================================
-// USER ROUTES
-// ============================================
+
+
+
 router.get("/me", checkAuth, userdata);
 router.post("/register", signup);
 router.post("/login", login);
@@ -83,57 +83,57 @@ router.route("/quotes/:id").put(checkAuth, updateQuote)
 router.route("/invoices").get(checkAuth, getInvoices)
 
 
-// ============================================
-// PAYFAST ORDER ROUTES
-// ============================================
 
-// 1. Initiate Payment - Frontend calls this to start payment
+
+
+
+
 router.post("/create-order", initiatePayment);
 
-// 2. PayFast Webhook - PayFast calls this after payment
-// PayFast ITN notifications are sent as application/x-www-form-urlencoded
+
+
 router.post("/payfast/notify", handlePayfastNotification);
 
-// 3. Check Payment Status by order ID
+
 router.get("/payments/status/:orderId", getOrderPaymentStatus);
 
-// 4. Get Order by ID
+
 router.get("/orders/:orderId", getOrder);
 
-// 5. Get User Orders by email
+
 router.get("/orders/user/:email", checkAuth, getUserOrders);
 
-// 6. Download Product
+
 router.get("/download/:orderNumber/:productId", downloadProduct);
 
 router.patch("/orders/:orderId/cancel", cancelOrder);
 
-// -------------------------------------******************-------------------------------------------------
 
-// 1. Initiate Payment - Frontend calls this to start payment
+
+
 router.route("/credit/create-order").post(checkAuth, initiateCreditPayment)
 
-// 2. PayFast Webhook - PayFast calls this after payment
+
 router.post("/credit/payfast/notify", handleCreditPaymentNotification);
 
-// 3. Check Payment Status by order ID
+
 router.get("/credit/payments/status/:orderId", getCreditOrderStatus);
 
-// 4. Get Order by ID
+
 router.get("/credit/orders/:orderId", getCreditOrder);
 
-// 5. Get User Orders by email
+
 router.get("/credit/orders/user/:email", checkAuth, getUserCreditOrders);
 
-// -------------------------------------******************-------------------------------------------------
 
-// 1. Initiate Payment - Frontend calls this to start payment
+
+
 router.route("/invoices/create-payment").post(checkAuth, initiateInvoicePayment)
 
-// 2. PayFast Webhook - PayFast calls this after payment
+
 router.post("/invoice/payfast/notify", handleInvoicePaymentNotification);
 
-// 4. Get Order by ID
+
 router.get("/invoices/orders/:orderId", getInvoiceOrder);
 
 export { router };

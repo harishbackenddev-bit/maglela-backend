@@ -1,4 +1,4 @@
-// config/ai-speech-config.ts
+
 
 interface SpeechModel {
   name: string;
@@ -11,9 +11,9 @@ interface SpeechModel {
 type SpeechProvider = Record<string, SpeechModel>;
 
 export const SPEECH_MODELS: Record<string, SpeechProvider> = {
-  // ============================================
-  // ✅ ONLY OPENAI TTS MODELS
-  // ============================================
+  
+  
+  
   openai: {
     "tts-1": {
       name: "TTS-1",
@@ -29,9 +29,9 @@ export const SPEECH_MODELS: Record<string, SpeechProvider> = {
     },
   },
 
-  // ============================================
-  // ✅ ONLY ANTHROPIC (CLAUDE) MODELS
-  // ============================================
+  
+  
+  
   anthropic: {
     "claude-sonnet-4-6": {
       name: "Claude Sonnet 4.6",

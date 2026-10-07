@@ -1,10 +1,4 @@
-/**
- * Schema-driven tests that run against EVERY model in src/models:
- *  - required fields are enforced
- *  - enum fields reject unknown values and accept every listed value
- *  - defaults are applied
- *  - unique fields have an index
- */
+
 import { describe, it, expect } from "vitest";
 import { allModels } from "./helpers";
 

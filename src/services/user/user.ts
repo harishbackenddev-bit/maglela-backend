@@ -186,12 +186,12 @@ export const forgotPasswordService = async (
 };
 
 
-// ✅ 2. Reset Password Service - Verify Token and Update Password
+
 export const verifyPasswordResetService = async (payload: any, res: Response) => {
   try {
     const { token, newPassword, confirmPassword } = payload;
 
-    // Validate input
+    
     if (!token || !newPassword) {
       return errorResponseHandler(
         "Token and new password are required",
@@ -216,7 +216,7 @@ export const verifyPasswordResetService = async (payload: any, res: Response) =>
       );
     }
 
-    // ✅ Verify JWT token
+    
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
@@ -235,7 +235,7 @@ export const verifyPasswordResetService = async (payload: any, res: Response) =>
       );
     }
 
-    // Find user by ID from token
+    
     const user = await usersModel.findById(decoded.id);
     if (!user) {
       return errorResponseHandler(
@@ -244,10 +244,10 @@ export const verifyPasswordResetService = async (payload: any, res: Response) =>
         res
       );
     }
-    // Hash new password
+    
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    // Update user password
+    
     user.password = hashedPassword;
     await user.save();
 
@@ -269,41 +269,41 @@ export const verifyPasswordResetService = async (payload: any, res: Response) =>
 
 
 export const getUserInfoService = async (id: string, res: Response) => {
-  // const user = await usersModel.findById(id);
-  // if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+  
+  
 
-  // const userProjects = await projectsModel.find({ userId: id }).select("-__v");
+  
 
-  // return {
-  //     success: true,
-  //     message: "User retrieved successfully",
-  //     data: {
-  //         user,
-  //         projects: userProjects.length > 0 ? userProjects : [],
-  //     }
-  // };
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 
-// export const editUserInfoService = async (id: string, payload: any, res: Response) => {
-//     const user = await usersModel.findById(id);
-//     if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
-//     const countryCode = "+45";
-//     payload.phoneNumber = `${countryCode}${payload.phoneNumber}`;
-//     const updateduser = await usersModel.findByIdAndUpdate(id,{ ...payload },{ new: true});
 
-//     return {
-//         success: true,
-//         message: "User updated successfully",
-//         data: updateduser,
-//     };
-// }
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const updateAUserService = async (payload: any, res: Response) => {
   const userId = payload.userId;
   const body = payload.body;
-  // console.log("userIdpayload", userId);
-  // console.log("bodypayload", body);
+  
+  
   const user = await usersModel.findById(userId);
   if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
   const updateduser = await usersModel.findByIdAndUpdate(userId, { ...body }, { new: true });
@@ -317,8 +317,8 @@ export const updateAUserService = async (payload: any, res: Response) => {
 export const twoFactorAuthService = async (payload: any, res: Response) => {
   const userId = payload.userId;
   const body = payload.body;
-  // console.log("userIdpayload", userId);
-  // console.log("bodypayload", body);
+  
+  
   const user = await usersModel.findById(userId);
   if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
   const updateduser = await usersModel.findByIdAndUpdate(userId, { ...body }, { new: true });
@@ -341,7 +341,7 @@ export const updateAPasswordService = async (payload: any, res: Response) => {
 
   if (!user) { return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res); }
 
-  // Check current password
+  
   const isPasswordMatched = await bcrypt.compare(
     currentPassword,
     user.password
@@ -355,11 +355,11 @@ export const updateAPasswordService = async (payload: any, res: Response) => {
     );
   }
 
-  // Hash new password
+  
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-  // Update password
+  
   await usersModel.findByIdAndUpdate(
     userId,
     {
@@ -377,30 +377,30 @@ export const updateAPasswordService = async (payload: any, res: Response) => {
 };
 
 export const deleteAUserService = async (id: string, res: Response) => {
-  // const user = await usersModel.findById(id);
-  // if (!user) return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
+  
+  
 
-  // // Delete user projects ----
-  // const userProjects = await projectsModel.deleteMany({ userId: id })
+  
+  
 
-  // // Delete user ----
-  // await usersModel.findByIdAndDelete(id)
+  
+  
 
-  // return {
-  //     success: true,
-  //     message: "User deleted successfully",
-  //     data: {
-  //         user,
-  //         projects: userProjects
-  //     }
-  // }
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 
 
 export const getNotificationPreferencesService = async (payload: any, res: Response) => {
   const userId = payload.userId;
-  // console.log("userIdpayload", userId);
+  
   const user = await notificationsModel.findOne({ userId });
 
   return {
@@ -426,12 +426,12 @@ export const updateNotificationPreferencesService = async (
         userId,
       },
       $setOnInsert: {
-        identifier: identifier(), // only when creating
+        identifier: identifier(), 
       },
     },
     {
       new: true,
-      upsert: true, // create if not found
+      upsert: true, 
       runValidators: true,
     }
   );
@@ -478,7 +478,7 @@ export const createWorkshopService = async (
 
 export const getworkshopService = async (payload: any, res: Response) => {
   const userId = payload.userId;
-  // console.log("userIdpayload", userId);
+  
   const user = await workshopModel.find({ userId });
 
   return {
@@ -535,36 +535,36 @@ export const getprojectsService = async (payload: any, res: Response) => {
 };
 
 
-// Dashboard
+
 export const getDashboardStatsService = async (payload: any, res: Response) => {
-  // //Ongoing project count
+  
   const userId = payload.currentUser
 
-  // // console.log("userid",userId);
+  
 
-  // const ongoingProjectCount = await projectsModel.countDocuments({ userId, status: { $ne: "1" } })
+  
 
-  // const completedProjectCount = await projectsModel.countDocuments({ userId,status: "1" })
+  
 
-  // const workingProjectDetails = await projectsModel.find({ userId, status: { $ne: "1" } }).select("projectName projectimageLink status"); // Adjust the fields as needed
+  
 
 
-  // const response = {
-  //     success: true,
-  //     message: "Dashboard stats fetched successfully",
-  //     data: {
-  //         ongoingProjectCount,
-  //         completedProjectCount,
-  //          workingProjectDetails,
-  //     }
-  // }
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   return userId;
 }
 
-// ============================================
-// ✅ GET ALL AI WRITING DATA
-// ============================================
+
+
+
 
 export const getAIwritingDataService = async (req: Request, res: Response) => {
   try {
@@ -591,9 +591,9 @@ export const getAIwritingDataService = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// ✅ GET ALL AI SPEECH DATA
-// ============================================
+
+
+
 
 export const getAIspeechDataService = async (req: Request, res: Response) => {
   try {
@@ -684,7 +684,7 @@ export const createSupportMessageService = async (
   try {
     const { userId, body } = payload;
 
-    // Get logged-in user
+    
     const user = await usersModel.findById(userId);
 
     if (!user) {
@@ -695,7 +695,7 @@ export const createSupportMessageService = async (
       };
     }
 
-    // Create support message
+    
     const supportMessage = await supportMessageModel.create({
       userId: user._id,
       name: user.name,
@@ -740,7 +740,7 @@ export const getQuoteService = async (
   try {
     const { userId } = payload;
 
-    // Find user by ID
+    
     const user = await usersModel.findById(userId);
 
     if (!user) {
@@ -755,7 +755,7 @@ export const getQuoteService = async (
 
         const quote = await QuoteModel.find({
       "clientInfo.email": userEmail,
-    }).sort({ createdAt: -1 }); // Latest first
+    }).sort({ createdAt: -1 }); 
 
     if (!quote) {
       return {
@@ -803,7 +803,7 @@ export const getInvoicesService = async (
 
     const invoices = await InvoiceModel.find({
       "clientInfo.email": userEmail,
-    }).sort({ createdAt: -1 }); // Latest first
+    }).sort({ createdAt: -1 }); 
 
     if (!invoices.length) {
       return {

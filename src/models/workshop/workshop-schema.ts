@@ -28,15 +28,15 @@ const workshopSchema = new Schema(
             type: String,
         },
 
-        // Workshop Date
+        
         date: {
-            type: String, // Example: "2026-06-30"
+            type: String, 
             default: null,
         },
 
-        // Workshop Time
+        
         time: {
-            type: String, // Example: "10:30 AM"
+            type: String, 
             default: null,
         },
 

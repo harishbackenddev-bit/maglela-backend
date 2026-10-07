@@ -1,4 +1,4 @@
-/** Every service module loads (imports resolve, no top-level crash) and exports only functions. */
+
 import { describe, it, expect } from "vitest";
 
 const modules = import.meta.glob("../../src/services/**/*.ts", { eager: true });
@@ -11,7 +11,7 @@ describe("services load", () => {
     const exports = Object.entries(mod as Record<string, unknown>).filter(([k]) => k !== "default");
     expect(exports.length).toBeGreaterThan(0);
     for (const [name, value] of exports) {
-      if (name === "PRODUCT_PDF_MAP" || name === "TOOLKIT_PDF_MAP") continue; // data tables
+      if (name === "PRODUCT_PDF_MAP" || name === "TOOLKIT_PDF_MAP") continue; 
       expect(typeof value, name).toBe("function");
     }
   });

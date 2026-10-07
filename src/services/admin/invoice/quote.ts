@@ -1,4 +1,4 @@
-// services/invoice/quote.service.ts
+
 import { QuoteModel } from "../../../models/invoice/quote-schema";
 import { Response } from "express";
 import { sendQuoteEmail } from "../../../utils/mails/invoiceemail";
@@ -12,10 +12,10 @@ export const createQuoteService = async (body: any, res: Response) => {
       additionalNotes, 
       createdBy, 
       createdByEmail,
-      status = "sent" // Default to sent
+      status = "sent" 
     } = body;
 
-    // Validate required fields
+    
     if (!clientInfo?.clientName || !clientInfo?.email) {
       return {
         success: false,
@@ -32,10 +32,10 @@ export const createQuoteService = async (body: any, res: Response) => {
       };
     }
 
-    // Generate quote number
+    
     const quoteNumber = await QuoteModel.generateQuoteNumber();
 
-    // Calculate totals
+    
     let subtotal = 0;
     const itemsWithTotals = items.map((item: any, index: number) => {
       const lineTotal = item.quantity * item.rate;
@@ -47,10 +47,10 @@ export const createQuoteService = async (body: any, res: Response) => {
       };
     });
 
-    const taxTotal = subtotal * 0.15; // 15% VAT
+    const taxTotal = subtotal * 0.15; 
     const grandTotal = subtotal + taxTotal;
 
-    // Create quote
+    
     const quote = await QuoteModel.create({
       quoteNumber,
       clientInfo,
@@ -66,23 +66,23 @@ export const createQuoteService = async (body: any, res: Response) => {
       sentAt: status === "sent" ? new Date() : null,
     });
 
-    // Send email if status is "sent"
+    
     if (status === "sent") {
       try {
         await sendQuoteEmail({
           to: clientInfo.email,
           clientName: clientInfo.clientName,
           quoteNumber: quote.quoteNumber,
-          amount: quote.subtotal,        // ✅ From DB
-          taxAmount: quote.taxTotal,     // ✅ From DB
-          totalAmount: quote.grandTotal, // ✅ From DB
+          amount: quote.subtotal,        
+          taxAmount: quote.taxTotal,     
+          totalAmount: quote.grandTotal, 
           validUntil: quote.validUntil,
           items: itemsWithTotals,
         });
         console.log(`📧 Quote email sent to ${clientInfo.email}`);
       } catch (emailError) {
         console.error("Error sending quote email:", emailError);
-        // Don't fail the request if email fails
+        
       }
     }
 
@@ -115,7 +115,7 @@ export const saveDraftQuoteService = async (body: any, res: Response) => {
 
     const quoteNumber = await QuoteModel.generateQuoteNumber();
 
-    // Calculate totals for draft
+    
     let subtotal = 0;
     const itemsWithTotals = (items || []).map((item: any, index: number) => {
       const lineTotal = item.quantity * item.rate;
@@ -180,27 +180,27 @@ export const sendQuoteService = async (id: string, body: any, res: Response) => 
       };
     }
 
-    // Update status to sent
+    
     quote.status = 'sent';
     quote.sentAt = new Date();
     await quote.save();
 
-    // Send email
+    
     try {
       await sendQuoteEmail({
         to: quote.clientInfo.email,
         clientName: quote.clientInfo.clientName,
         quoteNumber: quote.quoteNumber,
-        amount: quote.subtotal,        // ✅ From DB
-        taxAmount: quote.taxTotal,     // ✅ From DB
-        totalAmount: quote.grandTotal, // ✅ From DB
+        amount: quote.subtotal,        
+        taxAmount: quote.taxTotal,     
+        totalAmount: quote.grandTotal, 
         validUntil: quote.validUntil,
         items: quote.items || [],
       });
       console.log(`📧 Quote email sent to ${quote.clientInfo.email}`);
     } catch (emailError) {
       console.error("Error sending quote email:", emailError);
-      // Don't fail the request if email fails
+      
     }
 
     return {
@@ -372,15 +372,15 @@ export const updateQuoteStatusService = async (id: string, body: any, res: Respo
         break;
       case 'sent':
         updatedQuote = await quote.sendQuote();
-        // Send email when marking as sent
+        
         try {
           await sendQuoteEmail({
             to: quote.clientInfo.email,
             clientName: quote.clientInfo.clientName,
             quoteNumber: quote.quoteNumber,
-            amount: quote.subtotal,        // ✅ From DB
-            taxAmount: quote.taxTotal,     // ✅ From DB
-            totalAmount: quote.grandTotal, // ✅ From DB
+            amount: quote.subtotal,        
+            taxAmount: quote.taxTotal,     
+            totalAmount: quote.grandTotal, 
             validUntil: quote.validUntil,
             items: quote.items || [],
           });

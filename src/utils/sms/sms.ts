@@ -1,4 +1,4 @@
-// import twilio
+
 import { customAlphabet } from "nanoid";
 import { passwordResetTokenModel } from "../../models/password-token-schema";
 import twilio from "twilio";
@@ -10,7 +10,7 @@ export const generatePasswordResetTokenByPhoneWithTwilio = async (phoneNumber: s
   try {
     const genId = customAlphabet('0123456789', 6);
     const token = genId();
-    const expires = new Date(new Date().getTime() + 3600 * 1000); // Token valid for 1 hour
+    const expires = new Date(new Date().getTime() + 3600 * 1000); 
 
     const existingToken = await passwordResetTokenModel.findOne({ phoneNumber });
     if (existingToken) {

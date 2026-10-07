@@ -1,9 +1,9 @@
-// models/orders/plan-order-schema.ts
+
 import { Schema, model, Document } from "mongoose";
 
-// ============================================
-// INTERFACE
-// ============================================
+
+
+
 
 export interface IPlanOrder extends Document {
     orderNumber: string;
@@ -11,7 +11,7 @@ export interface IPlanOrder extends Document {
     userId?: Schema.Types.ObjectId;
     orderType: 'plan' | 'product' | 'store';
 
-    // Plan Details
+    
     planId: string;
     planName: string;
     planType: 'basic' | 'pro' | 'enterprise';
@@ -20,7 +20,7 @@ export interface IPlanOrder extends Document {
     billingCycle: 'monthly' | 'yearly';
     planFeatures?: string[];
 
-    // Payment
+    
     subtotal: number;
     taxAmount: number;
     discountAmount: number;
@@ -31,7 +31,7 @@ export interface IPlanOrder extends Document {
     paymentMethod: 'payfast' | 'credit_card' | 'paypal' | 'bank_transfer';
     transactionId?: string;
 
-    // Billing Info (Full details like order schema)
+    
     billingInfo: {
         firstName: string;
         lastName: string;
@@ -46,7 +46,7 @@ export interface IPlanOrder extends Document {
         taxNumber?: string;
     };
 
-    // PayFast Response
+    
     payfast: {
         paymentId?: string;
         transactionId?: string;
@@ -56,7 +56,7 @@ export interface IPlanOrder extends Document {
         response?: any;
     };
 
-    // Credit Tracking
+    
     creditDetails: {
         creditsPurchased: number;
         creditsBefore?: number;
@@ -66,7 +66,7 @@ export interface IPlanOrder extends Document {
         remainingCredits?: number;
     };
 
-    // User Info Snapshot
+    
     user: {
         name?: string;
         email?: string;
@@ -74,7 +74,7 @@ export interface IPlanOrder extends Document {
         currentCredits?: number;
     };
 
-    // Status History
+    
     statusHistory?: Array<{
         status: string;
         timestamp: Date;
@@ -82,10 +82,10 @@ export interface IPlanOrder extends Document {
         updatedBy?: string;
     }>;
 
-    // Notes
+    
     notes?: string;
 
-    // Timestamps
+    
     createdAt: Date;
     updatedAt: Date;
     paidAt?: Date;
@@ -93,13 +93,13 @@ export interface IPlanOrder extends Document {
     refundedAt?: Date;
 }
 
-// ============================================
-// SCHEMA
-// ============================================
+
+
+
 
 const PlanOrderSchema = new Schema(
     {
-        // Order Identification
+        
         orderNumber: {
             type: String,
             required: true,
@@ -125,7 +125,7 @@ const PlanOrderSchema = new Schema(
             required: true,
         },
 
-        // Plan Details
+        
         planId: {
             type: String,
             required: true,
@@ -159,7 +159,7 @@ const PlanOrderSchema = new Schema(
             default: [],
         },
 
-        // Payment Details
+        
         subtotal: {
             type: Number,
             required: true,
@@ -203,7 +203,7 @@ const PlanOrderSchema = new Schema(
             trim: true,
         },
 
-        // Billing Info (Full details like order schema)
+        
         billingInfo: {
             firstName: {
                 type: String,
@@ -255,7 +255,7 @@ const PlanOrderSchema = new Schema(
             },
         },
 
-        // PayFast Response
+        
         payfast: {
             paymentId: {
                 type: String,
@@ -281,7 +281,7 @@ const PlanOrderSchema = new Schema(
             },
         },
 
-        // Credit Tracking
+        
         creditDetails: {
             creditsPurchased: {
                 type: Number,
@@ -309,7 +309,7 @@ const PlanOrderSchema = new Schema(
             },
         },
 
-        // User Info Snapshot
+        
         user: {
             name: {
                 type: String,
@@ -329,7 +329,7 @@ const PlanOrderSchema = new Schema(
             },
         },
 
-        // Status History
+        
         statusHistory: [
             {
                 status: {
@@ -351,13 +351,13 @@ const PlanOrderSchema = new Schema(
             },
         ],
 
-        // Notes
+        
         notes: {
             type: String,
             trim: true,
         },
 
-        // Timestamps
+        
         paidAt: {
             type: Date,
         },
@@ -373,9 +373,9 @@ const PlanOrderSchema = new Schema(
     }
 );
 
-// ============================================
-// INDEXES FOR PERFORMANCE
-// ============================================
+
+
+
 
 PlanOrderSchema.index({ userEmail: 1, createdAt: -1 });
 PlanOrderSchema.index({ orderNumber: 1, userEmail: 1 });
@@ -383,11 +383,11 @@ PlanOrderSchema.index({ status: 1, createdAt: -1 });
 PlanOrderSchema.index({ transactionId: 1, status: 1 });
 PlanOrderSchema.index({ 'planType': 1, status: 1 });
 
-// ============================================
-// MIDDLEWARE
-// ============================================
 
-// Generate order number before saving
+
+
+
+
 PlanOrderSchema.pre('save', function (next) {
     if (!this.orderNumber) {
         const timestamp = Date.now().toString(36);
@@ -395,7 +395,7 @@ PlanOrderSchema.pre('save', function (next) {
         this.orderNumber = `PLN-${timestamp}-${random}`;
     }
 
-    // Calculate remaining credits
+    
     if (this.creditDetails) {
         this.creditDetails.remainingCredits = 
             this.creditDetails.creditsPurchased - (this.creditDetails.usedCredits || 0);
@@ -404,7 +404,7 @@ PlanOrderSchema.pre('save', function (next) {
     next();
 });
 
-// Auto-add status history on status change
+
 PlanOrderSchema.pre('findOneAndUpdate', function (next) {
     const update = this.getUpdate() as any;
     if (update.status) {
@@ -419,7 +419,7 @@ PlanOrderSchema.pre('findOneAndUpdate', function (next) {
         }
         update.$push.statusHistory = statusHistory;
 
-        // Set timestamps based on status
+        
         if (update.status === 'paid') {
             update.paidAt = new Date();
         } else if (update.status === 'cancelled') {
@@ -431,9 +431,9 @@ PlanOrderSchema.pre('findOneAndUpdate', function (next) {
     next();
 });
 
-// ============================================
-// VIRTUAL PROPERTIES
-// ============================================
+
+
+
 
 PlanOrderSchema.virtual('isPaid').get(function () {
     return this.status === 'paid';
@@ -458,12 +458,12 @@ PlanOrderSchema.virtual('formattedTotal').get(function () {
     }).format(this.totalAmount);
 });
 
-// ============================================
-// METHODS
-// ============================================
+
+
+
 
 PlanOrderSchema.methods = {
-    // Update credit usage
+    
     async useCredits(amount: number) {
         if (!this.creditDetails) return false;
 
@@ -476,13 +476,13 @@ PlanOrderSchema.methods = {
         return true;
     },
 
-    // Check if credits are expired
+    
     isCreditsExpired(): boolean {
         if (!this.creditDetails?.expiryDate) return false;
         return new Date() > this.creditDetails.expiryDate;
     },
 
-    // Get remaining validity days
+    
     getRemainingDays(): number | null {
         if (!this.creditDetails?.expiryDate) return null;
         const diff = this.creditDetails.expiryDate.getTime() - new Date().getTime();
@@ -490,17 +490,17 @@ PlanOrderSchema.methods = {
     },
 };
 
-// ============================================
-// STATIC METHODS
-// ============================================
+
+
+
 
 PlanOrderSchema.statics = {
-    // Find orders by user email
+    
     async findByUserEmail(email: string) {
         return this.find({ userEmail: email }).sort({ createdAt: -1 });
     },
 
-    // Find active orders (paid and not expired)
+    
     async findActiveOrders(email: string) {
         return this.find({
             userEmail: email,
@@ -509,7 +509,7 @@ PlanOrderSchema.statics = {
         }).sort({ createdAt: -1 });
     },
 
-    // Get total credits purchased by user
+    
     async getTotalCreditsPurchased(email: string) {
         const result = await this.aggregate([
             { $match: { userEmail: email, status: 'paid' } },
@@ -518,7 +518,7 @@ PlanOrderSchema.statics = {
         return result.length > 0 ? result[0].total : 0;
     },
 
-    // Get monthly/yearly breakdown
+    
     async getBillingBreakdown(email: string) {
         return this.aggregate([
             { $match: { userEmail: email, status: 'paid' } },
@@ -534,8 +534,8 @@ PlanOrderSchema.statics = {
     },
 };
 
-// ============================================
-// MODEL
-// ============================================
+
+
+
 
 export const planOrderModel = model<IPlanOrder>('plan_orders', PlanOrderSchema);

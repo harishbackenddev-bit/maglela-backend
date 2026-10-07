@@ -1,4 +1,4 @@
-// controllers/invoice/quote.controller.ts
+
 import { Request, Response } from "express";
 import {
   createQuoteService,
@@ -11,9 +11,9 @@ import {
   updateQuoteStatusService,
 } from "../../../services/admin/invoice/quote";
 
-// ============================================
-// CREATE QUOTE
-// ============================================
+
+
+
 export const createQuote = async (req: Request, res: Response) => {
   try {
     const result = await createQuoteService(req.body, res);
@@ -28,9 +28,9 @@ export const createQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// SAVE AS DRAFT
-// ============================================
+
+
+
 export const saveDraftQuote = async (req: Request, res: Response) => {
   try {
     const result = await saveDraftQuoteService(req.body, res);
@@ -45,9 +45,9 @@ export const saveDraftQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET ALL QUOTES
-// ============================================
+
+
+
 export const getQuotes = async (req: Request, res: Response) => {
   try {
     const result = await getQuotesService(req.query, res);
@@ -62,9 +62,9 @@ export const getQuotes = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// GET SINGLE QUOTE
-// ============================================
+
+
+
 export const getQuote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -80,9 +80,9 @@ export const getQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// UPDATE QUOTE
-// ============================================
+
+
+
 export const updateQuote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -98,9 +98,9 @@ export const updateQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// DELETE QUOTE
-// ============================================
+
+
+
 export const deleteQuote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -116,9 +116,9 @@ export const deleteQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// SEND QUOTE
-// ============================================
+
+
+
 export const sendQuote = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -134,9 +134,9 @@ export const sendQuote = async (req: Request, res: Response) => {
   }
 };
 
-// ============================================
-// UPDATE QUOTE STATUS
-// ============================================
+
+
+
 export const updateQuoteStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

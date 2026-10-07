@@ -1,4 +1,4 @@
-// models/orders/invoice_orders.ts
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IInvoiceOrder extends Document {
@@ -7,13 +7,13 @@ export interface IInvoiceOrder extends Document {
     userId: mongoose.Types.ObjectId;
     orderType: string;
     
-    // Invoice Details
+    
     invoiceId: mongoose.Types.ObjectId;
     invoiceNumber: string;
     invoiceAmount: number;
     description: string;
     
-    // Payment Details
+    
     subtotal: number;
     taxAmount: number;
     discountAmount: number;
@@ -23,7 +23,7 @@ export interface IInvoiceOrder extends Document {
     paymentMethod: string;
     transactionId: string;
     
-    // Billing Info
+    
     billingInfo: {
         firstName: string;
         lastName: string;
@@ -38,7 +38,7 @@ export interface IInvoiceOrder extends Document {
         taxNumber: string;
     };
     
-    // Invoice Items
+    
     items: Array<{
         description: string;
         quantity: number;
@@ -47,20 +47,20 @@ export interface IInvoiceOrder extends Document {
         serviceType?: string;
     }>;
     
-    // User Info Snapshot
+    
     user: {
         name: string;
         email: string;
     };
     
-    // Status History
+    
     statusHistory: Array<{
         status: string;
         timestamp: Date;
         note: string;
     }>;
     
-    // PayFast Response
+    
     payfast: {
         paymentId?: string;
         transactionId?: string;
@@ -68,7 +68,7 @@ export interface IInvoiceOrder extends Document {
         amount?: number;
     };
     
-    // Timestamps
+    
     paidAt: Date | null;
     cancelledAt: Date | null;
     refundedAt: Date | null;
@@ -98,7 +98,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         enum: ['invoice'],
     },
     
-    // Invoice Details
+    
     invoiceId: {
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
@@ -117,7 +117,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         default: 'Invoice Payment',
     },
     
-    // Payment Details
+    
     subtotal: {
         type: Number,
         required: true,
@@ -152,7 +152,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         required: true,
     },
     
-    // Billing Info
+    
     billingInfo: {
         firstName: { type: String, required: true },
         lastName: { type: String, required: true },
@@ -167,7 +167,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         taxNumber: { type: String, default: '' },
     },
     
-    // Invoice Items
+    
     items: [{
         description: { type: String, required: true },
         quantity: { type: Number, required: true },
@@ -176,20 +176,20 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         serviceType: { type: String },
     }],
     
-    // User Info Snapshot
+    
     user: {
         name: { type: String, required: true },
         email: { type: String, required: true },
     },
     
-    // Status History
+    
     statusHistory: [{
         status: { type: String, required: true },
         timestamp: { type: Date, default: Date.now },
         note: { type: String },
     }],
     
-    // PayFast Response
+    
     payfast: {
         paymentId: { type: String },
         transactionId: { type: String },
@@ -197,7 +197,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
         amount: { type: Number },
     },
     
-    // Timestamps
+    
     paidAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     refundedAt: { type: Date, default: null },
@@ -206,7 +206,7 @@ const InvoiceOrderSchema = new Schema<IInvoiceOrder>({
     timestamps: true,
 });
 
-// Indexes for faster queries
+
 InvoiceOrderSchema.index({ orderNumber: 1 });
 InvoiceOrderSchema.index({ transactionId: 1 });
 InvoiceOrderSchema.index({ userEmail: 1 });

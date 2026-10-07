@@ -1,4 +1,4 @@
-// models/availability/availability.model.ts
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITimeSlot {
@@ -111,7 +111,7 @@ const AvailabilitySchema = new Schema<IAvailability>({
   timestamps: true,
 });
 
-// Indexes
+
 AvailabilitySchema.index({ userId: 1 });
 AvailabilitySchema.index({ userEmail: 1 });
 AvailabilitySchema.index({ isActive: 1 });

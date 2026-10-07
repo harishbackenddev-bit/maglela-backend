@@ -1,6 +1,6 @@
 import { Model } from "mongoose";
 
-/** Run the schema's `pre('save')` hooks (incl. mongoose's own validation) WITHOUT a database. */
+
 export const runPreSave = (doc: any): Promise<void> =>
   new Promise((resolve, reject) => {
     doc.$__schema.s.hooks.execPre("save", doc, [], (err: any) => (err ? reject(err) : resolve()));

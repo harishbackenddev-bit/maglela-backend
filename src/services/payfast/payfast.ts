@@ -1,4 +1,4 @@
-// services/payfast/payfast.service.ts
+
 import { Request, Response } from "express";
 import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
@@ -14,9 +14,9 @@ import { sendOrderConfirmationEmail, sendAdminOrderNotification } from "../../ut
 import { getPDFFileInfoById } from "./product-mapping";
 import { getToolkitFileInfoById } from "./user-product-mapping";
 
-// ============================================
-// INITIATE PAYMENT SERVICE
-// ============================================
+
+
+
 export const initiatePaymentService = async (payload: any, req: Request, res: Response) => {
   const {
     userEmail,
@@ -37,13 +37,13 @@ export const initiatePaymentService = async (payload: any, req: Request, res: Re
     const orderNumber = generateOrderNumber();
     const transactionId = generateTransactionId();
 
-    // ✅ Check if token exists in headers
+    
     const token = req.headers.authorization;
     const isAuthenticated = token && token.startsWith('Bearer ');
     
     console.log('🔍 Auth check:', { isAuthenticated, hasToken: !!token });
 
-    // ✅ Calculate totals and get PDF file info by product ID
+    
     let subtotal = 0;
     const orderItems = items.map((item: any) => {
       const itemSubtotal = item.price * item.quantity;
@@ -51,14 +51,14 @@ export const initiatePaymentService = async (payload: any, req: Request, res: Re
       
       let fileInfo = null;
       
-      // ✅ If authenticated, try toolkit mapping first
+      
       if (isAuthenticated) {
-        // Check if it's a toolkit product (you can add a flag or check based on productId range)
-        // For now, we'll check both mappings
+        
+        
         fileInfo = getToolkitFileInfoById(item.productId);
         
       } else {
-        // ✅ If not authenticated, use regular product mapping only
+        
         fileInfo = getPDFFileInfoById(item.productId);
       }
       
@@ -73,10 +73,10 @@ export const initiatePaymentService = async (payload: any, req: Request, res: Re
       };
     });
 
-    const taxAmount = subtotal * 0.15; // 15% VAT
+    const taxAmount = subtotal * 0.15; 
     const totalWithTax = subtotal + taxAmount;
 
-    // Create order with file info
+    
     const order = new orderModel({
       orderNumber: orderNumber,
       userEmail: userEmail,
@@ -119,9 +119,9 @@ export const initiatePaymentService = async (payload: any, req: Request, res: Re
   }
 };
 
-// ============================================
-// HANDLE PAYFAST NOTIFICATION SERVICE
-// ============================================
+
+
+
 export const handlePayfastNotificationService = async (payload: any, res: Response) => {
   try {
     const data = payload;
@@ -153,11 +153,11 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
       };
     }
 
-    // ✅ If payment is COMPLETE
+    
     if (paymentStatus === "COMPLETE") {
-      // ✅ Create download links with file info from order items
+      
       const downloadLinks = order.items.map((item: any) => {
-        // Use file info already stored in order items
+        
         const fileUrl = item.fileUrl || `/uploads/pdfs/${item.productId}-default.pdf`;
         const fileName = item.fileName || `${item.title}.pdf`;
         
@@ -165,11 +165,11 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
           productId: String(item.productId),
           link: fileUrl,
           fileName: fileName,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) 
         };
       });
 
-      // Update order
+      
       const updatedOrder = await orderModel.findByIdAndUpdate(
         order._id,
         {
@@ -184,7 +184,7 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
 
       console.log(`✅ Payment completed for order:`, order.orderNumber);
 
-      // ✅ Send confirmation email to user with null checks
+      
       try {
         const billingInfo = order.billingInfo;
         if (billingInfo) {
@@ -195,7 +195,7 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
           const emailTo = billingInfo.email || '';
 
           if (emailTo) {
-            // ✅ Map items with file info
+            
             const mappedItems = order.items.map((item: any) => ({
               productId: String(item.productId),
               title: String(item.title),
@@ -206,7 +206,7 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
               fileName: String(item.fileName || '')
             }));
 
-            // ✅ Map download links with file names
+            
             const mappedDownloadLinks = downloadLinks.map((link: any) => ({
               productId: String(link.productId),
               link: String(link.link),
@@ -234,14 +234,14 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
         console.error('❌ Failed to send confirmation email:', emailError);
       }
 
-      // ✅ Send admin notification
+      
       try {
         const billingInfo = order.billingInfo;
         const fullName = billingInfo && billingInfo.firstName && billingInfo.lastName
           ? `${billingInfo.firstName} ${billingInfo.lastName}`.trim()
           : 'Valued Customer';
 
-        // ✅ Map items for admin notification
+        
         const mappedItems = order.items.map((item: any) => ({
           productId: String(item.productId),
           title: String(item.title),
@@ -266,7 +266,7 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
       }
     }
 
-    // ✅ If payment is PENDING
+    
     if (paymentStatus === "PENDING") {
       await orderModel.findByIdAndUpdate(
         order._id,
@@ -279,7 +279,7 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
       console.log("⏳ Payment pending for order:", order.orderNumber);
     }
 
-    // ✅ If payment is FAILED or CANCELLED
+    
     if (
       paymentStatus === "FAILED" ||
       paymentStatus === "CANCELLED"
@@ -308,9 +308,9 @@ export const handlePayfastNotificationService = async (payload: any, res: Respon
   }
 };
 
-// ============================================
-// GET ORDER PAYMENT STATUS SERVICE
-// ============================================
+
+
+
 export const getOrderPaymentStatusService = async (
   id: string,
   body: any,
@@ -345,9 +345,9 @@ export const getOrderPaymentStatusService = async (
   }
 };
 
-// ============================================
-// GET ORDER SERVICE
-// ============================================
+
+
+
 export const getOrderService = async (
   id: string,
   body: any,
@@ -380,9 +380,9 @@ export const getOrderService = async (
   }
 };
 
-// ============================================
-// DOWNLOAD PRODUCT SERVICE
-// ============================================
+
+
+
 export const downloadProductService = async (
   orderNumber: string,
   productId: string,
@@ -398,7 +398,7 @@ export const downloadProductService = async (
       };
     }
 
-    // Check if order is paid
+    
     if (order.status !== 'paid' && order.status !== 'completed') {
       return {
         success: false,
@@ -406,7 +406,7 @@ export const downloadProductService = async (
       };
     }
 
-    // Find the item in order by product ID
+    
     const orderItem = order.items.find(
       (item: any) => item.productId === productId
     );
@@ -418,15 +418,15 @@ export const downloadProductService = async (
       };
     }
 
-    // ✅ Ensure fileUrl is always a string with fallback
+    
     const fileUrl = orderItem.fileUrl || `/uploads/pdfs/${productId}-default.pdf`;
     const fileName = orderItem.fileName || `${orderItem.title || 'product'}.pdf`;
 
     return {
       success: true,
       message: "Download ready",
-      fileUrl: fileUrl, // ✅ Always a string
-      fileName: fileName, // ✅ Always a string
+      fileUrl: fileUrl, 
+      fileName: fileName, 
       orderNumber: orderNumber,
       productId: productId,
     };

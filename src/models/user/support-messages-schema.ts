@@ -8,7 +8,7 @@ const supportMessageSchema = new Schema(
       required: true,
     },
 
-    // User snapshot
+    
     name: {
       type: String,
       required: true,
@@ -34,7 +34,7 @@ const supportMessageSchema = new Schema(
       default: null,
     },
 
-    // Form fields
+    
     subject: {
       type: String,
       required: true,
@@ -47,7 +47,7 @@ const supportMessageSchema = new Schema(
       trim: true,
     },
 
-    // Admin
+    
     status: {
       type: String,
       enum: ["pending", "in-progress", "resolved"],

@@ -1,10 +1,4 @@
-/**
- * Table-driven tests for EVERY exported controller handler in src/controllers.
- * The service layer is auto-mocked, so these tests check the HTTP layer only:
- *   1. a handler never throws and always sends exactly one response
- *   2. when the service rejects with errorResponseHandler(msg, code), that code + message reach the client
- *   3. when the service resolves, the client gets a success status (2xx) or a validation 4xx
- */
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mockReq, mockRes } from "../setup/express";
 import { errorResponseHandler } from "src/lib/errors/error-response-handler";
@@ -51,7 +45,7 @@ const makeReq = () => mockReq({
   file: undefined,
 });
 
-// These handlers query the Mongoose model directly (no service layer) - covered in payfast-direct.test.ts
+
 const DIRECT_DB = new Set(["payfast/payfast.ts › getUserOrders", "payfast/payfast.ts › downloadProduct", "payfast/payfast.ts › cancelOrder"]);
 
 const responded = (res: any) => ["status", "json", "send", "redirect", "download"].some((k) => res[k].mock.calls.length > 0);
@@ -87,7 +81,7 @@ describe.each(handlers)("%s", (name, handler) => {
     const serviceWasCalled = allServiceFns().some((f) => f.mock.calls.length > 0);
     if (serviceWasCalled) {
       const sent = res.status.mock.calls[0]?.[0];
-      // Either the handler forwarded the service error code, or it answered 4xx/5xx in its own way
+      
       expect(sent === undefined || sent >= 400, `status was ${sent}`).toBe(true);
       const body = res.json.mock.calls[0]?.[0] ?? res.send.mock.calls[0]?.[0];
       if (body && typeof body === "object") expect(body.success).toBe(false);

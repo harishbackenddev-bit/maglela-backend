@@ -1,4 +1,4 @@
-// services/payfast/credit.service.ts
+
 import { Request, Response } from "express";
 import {
     generateOrderNumber,
@@ -7,12 +7,12 @@ import {
 } from '../../utils/payfast.utils';
 import { planOrderModel } from "../../models/orders/plan_orders";
 import { CREDIT_PAYFAST_CONFIG } from "../../config/payfast.config";
-import { usersModel } from "../../models/user/user-schema"; // ✅ Import user model
+import { usersModel } from "../../models/user/user-schema"; 
 import { creditPlanModel } from "src/models/plans/plan-schema";
 
-// ============================================
-// PLAN DATA
-// ============================================
+
+
+
 const PLANS = {
     basic: {
         id: "basic",
@@ -67,10 +67,10 @@ const PLANS = {
     }
 };
 
-// ============================================
-// 1. INITIATE CREDIT PAYMENT SERVICE (NO TAX)
-// ============================================
-// services/payfast/credit.service.ts
+
+
+
+
 
 export const initiateCreditPaymentService = async (payload: any, req: Request, res: Response) => {
     try {
@@ -83,7 +83,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             amount: providedAmount
         } = payload;
 
-        // ✅ Validate required fields
+        
         if (!userEmail || !billingInfo || !planId) {
             return {
                 success: false,
@@ -91,7 +91,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Validate billing info fields
+        
         if (!billingInfo.firstName || !billingInfo.lastName || !billingInfo.email) {
             return {
                 success: false,
@@ -99,7 +99,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Find user
+        
         const user = await usersModel.findOne({ email: userEmail });
         if (!user) {
             return {
@@ -108,7 +108,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Get plan details from database
+        
         let planCredits = providedCredits || 0;
         let planPrice = providedAmount || 0;
         let planName = planId;
@@ -116,12 +116,12 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
         let planFeatures: string[] = [];
         let planData = null;
 
-        // If credits and amount are provided directly (from frontend), use them
+        
         if (providedCredits && providedAmount) {
             planCredits = providedCredits;
             planPrice = providedAmount;
             
-            // Try to get the full plan data from database
+            
             const planFromDb = await creditPlanModel.findOne({
                 name: { $regex: new RegExp(`^${planId}$`, 'i') },
                 billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
@@ -133,7 +133,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 planFeatures = planFromDb.features || [];
                 planData = planFromDb;
                 
-                // Determine plan type from name
+                
                 if (planName.toLowerCase().includes('pro')) {
                     planType = 'pro';
                 } else if (planName.toLowerCase().includes('enterprise') || planName.toLowerCase().includes('organisation')) {
@@ -143,7 +143,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 }
             }
         } else {
-            // Otherwise fetch from database
+            
             const planResult = await getPlanCredits(planId, billingCycle);
             if (!planResult) {
                 return {
@@ -158,7 +158,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             planData = planResult.plan;
             planFeatures = planResult.plan?.features || [];
             
-            // Determine plan type from name
+            
             if (planName.toLowerCase().includes('pro')) {
                 planType = 'pro';
             } else if (planName.toLowerCase().includes('enterprise') || planName.toLowerCase().includes('organisation')) {
@@ -168,18 +168,18 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             }
         }
 
-        // ✅ Generate order details
+        
         const orderNumber = generateOrderNumber();
         const transactionId = generateTransactionId();
 
-        // ✅ Create order in database with ALL required fields (NO TAX)
+        
         const order = new planOrderModel({
             orderNumber: orderNumber,
             userEmail: userEmail,
             userId: user._id,
             orderType: 'plan',
 
-            // Plan Details
+            
             planId: planId,
             planName: planName,
             planType: planType,
@@ -188,17 +188,17 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             billingCycle: billingCycle,
             planFeatures: planFeatures,
 
-            // Payment Details - NO TAX
+            
             subtotal: planPrice,
-            taxAmount: 0, // ✅ No tax
+            taxAmount: 0, 
             discountAmount: 0,
-            totalAmount: planPrice, // ✅ Direct amount without tax
+            totalAmount: planPrice, 
             currency: 'ZAR',
             status: 'pending',
             paymentMethod: 'payfast',
             transactionId: transactionId,
 
-            // Billing Info
+            
             billingInfo: {
                 firstName: billingInfo.firstName,
                 lastName: billingInfo.lastName,
@@ -213,7 +213,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 taxNumber: billingInfo.taxNumber || "",
             },
 
-            // Credit Tracking
+            
             creditDetails: {
                 creditsPurchased: planCredits,
                 creditsBefore: user.credits || 0,
@@ -222,7 +222,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 usedCredits: 0,
             },
 
-            // User Info Snapshot
+            
             user: {
                 name: `${billingInfo.firstName} ${billingInfo.lastName}`,
                 email: billingInfo.email,
@@ -230,17 +230,17 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 currentCredits: user.credits || 0,
             },
 
-            // Status History
+            
             statusHistory: [{
                 status: 'pending',
                 timestamp: new Date(),
                 note: 'Order created - awaiting payment',
             }],
 
-            // PayFast Response (initially empty)
+            
             payfast: {},
 
-            // Timestamps
+            
             paidAt: null,
             cancelledAt: null,
             refundedAt: null,
@@ -248,7 +248,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
 
         await order.save();
 
-        // ✅ Prepare PayFast payment data
+        
         const paymentData = preparePayFastDataCREDIT({
             amount: planPrice,
             email: billingInfo.email,
@@ -267,7 +267,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 transactionId: transactionId,
                 orderNumber: orderNumber,
                 orderId: order._id,
-                amount: planPrice, // ✅ Direct amount without tax
+                amount: planPrice, 
                 plan: {
                     id: planId,
                     name: planName,
@@ -283,7 +283,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
     } catch (error: any) {
         console.error('❌ Initiate Payment Error:', error);
 
-        // ✅ Check if it's a validation error
+        
         if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map((err: any) => err.message);
             return {
@@ -302,10 +302,10 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
     }
 };
 
-// Helper function to get plan credits from database
+
 const getPlanCredits = async (planId: string, billingCycle: string) => {
     try {
-        // Try to find by name (case insensitive)
+        
         const plan = await creditPlanModel.findOne({
             name: { $regex: new RegExp(`^${planId}$`, 'i') },
             billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
@@ -321,7 +321,7 @@ const getPlanCredits = async (planId: string, billingCycle: string) => {
             };
         }
 
-        // Try to find by planId field
+        
         const planById = await creditPlanModel.findOne({
             planId: planId,
             billingType: billingCycle === 'monthly' ? 'Monthly' : 'Yearly',
@@ -344,9 +344,9 @@ const getPlanCredits = async (planId: string, billingCycle: string) => {
     }
 };
 
-// ============================================
-// 2. HANDLE CREDIT PAYMENT NOTIFICATION SERVICE
-// ============================================
+
+
+
 
 export const handleCreditPaymentNotificationService = async (payload: any, res: Response) => {
   try {
@@ -358,7 +358,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
     const pfPaymentId = data.pf_payment_id;
     const orderNumber = data.custom_str1 || "";
 
-    // ✅ Find order
+    
     let order = await planOrderModel.findOne({
       $or: [
         { transactionId: transactionId },
@@ -374,10 +374,10 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
       };
     }
 
-    // ✅ Handle COMPLETE payment
+    
     if (paymentStatus === "COMPLETE") {
       try {
-        // ✅ 1. Update order status
+        
         const updatedOrder = await planOrderModel.findByIdAndUpdate(
           order._id,
           {
@@ -404,18 +404,18 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
 
         console.log(`✅ Credit payment completed for order: ${order.orderNumber}`);
 
-        // ✅ 2. ADD CREDITS TO USER
+        
         const user = await usersModel.findOne({ email: order.userEmail });
 
         if (user) {
           const previousCredits = user.credits || 0;
           const newCredits = previousCredits + order.credits;
 
-          // ✅ Update user with new credits and plan
+          
           await usersModel.findByIdAndUpdate(
             user._id,
             {
-              $inc: { credits: order.credits }, // ✅ Add credits
+              $inc: { credits: order.credits }, 
               $set: {
                 plan: order.planType,
                 planType: order.planType,
@@ -434,7 +434,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
         } else {
           console.warn(`⚠️ User not found: ${order.userEmail}`);
           
-          // Mark order that user not found
+          
           await planOrderModel.findByIdAndUpdate(
             order._id,
             {
@@ -460,7 +460,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
       } catch (error: any) {
         console.error('❌ Error processing payment:', error);
         
-        // ✅ If something fails, mark order as failed
+        
         await planOrderModel.findByIdAndUpdate(
           order._id,
           {
@@ -484,7 +484,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
       }
     }
 
-    // ✅ Handle PENDING payment
+    
     if (paymentStatus === "PENDING") {
       await planOrderModel.findByIdAndUpdate(
         order._id,
@@ -510,7 +510,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
       };
     }
 
-    // ✅ Handle FAILED or CANCELLED payment
+    
     if (paymentStatus === "FAILED" || paymentStatus === "CANCELLED") {
       await planOrderModel.findByIdAndUpdate(
         order._id,
@@ -550,9 +550,9 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
   }
 };
 
-// ============================================
-// 3. GET CREDIT ORDER STATUS SERVICE
-// ============================================
+
+
+
 export const getCreditOrderStatusService = async (orderId: string) => {
     try {
         const order = await planOrderModel.findOne({
@@ -596,9 +596,9 @@ export const getCreditOrderStatusService = async (orderId: string) => {
     }
 };
 
-// ============================================
-// 4. GET CREDIT ORDER SERVICE
-// ============================================
+
+
+
 export const getCreditOrderService = async (
   id: string,
   body: any,
@@ -631,9 +631,9 @@ export const getCreditOrderService = async (
   }
 };
 
-// ============================================
-// 5. GET USER CREDIT ORDERS SERVICE
-// ============================================
+
+
+
 export const getUserCreditOrdersService = async (email: string) => {
     try {
         if (!email) {
@@ -648,7 +648,7 @@ export const getUserCreditOrdersService = async (email: string) => {
             userEmail: email,
         }).sort({ createdAt: -1 });
 
-        // Format orders for response
+        
         const formattedOrders = orders.map(order => ({
             orderNumber: order.orderNumber,
             transactionId: order.transactionId,

@@ -1,7 +1,7 @@
-// utils/mails/orders/orderconfirmation.ts
+
 import nodemailer from 'nodemailer';
 
-// ✅ Define proper types with non-nullable properties
+
 interface OrderItem {
   productId: string;
   title: string;
@@ -22,7 +22,7 @@ interface OrderConfirmationEmailData {
   orderNumber: string;
   items: OrderItem[];
   totalAmount: string;
-  downloadLinks: DownloadLink[]; // ✅ Now expects non-nullable DownloadLink[]
+  downloadLinks: DownloadLink[]; 
 }
 
 interface AdminOrderNotificationData {
@@ -34,7 +34,7 @@ interface AdminOrderNotificationData {
   transactionId: string;
 }
 
-// Configure email transporter
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
@@ -45,11 +45,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Send order confirmation email to customer
+
 export const sendOrderConfirmationEmail = async (data: OrderConfirmationEmailData) => {
   const { to, name, orderNumber, items, totalAmount, downloadLinks } = data;
 
-  // Generate items HTML
+  
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.title}</td>
@@ -58,9 +58,9 @@ export const sendOrderConfirmationEmail = async (data: OrderConfirmationEmailDat
     </tr>
   `).join('');
 
-  // Generate download links HTML
+  
   const downloadLinksHtml = downloadLinks.map(link => {
-    // Find the product title from items
+    
     const product = items.find(item => item.productId === link.productId);
     const productTitle = product?.title || 'Download';
     
@@ -161,7 +161,7 @@ export const sendOrderConfirmationEmail = async (data: OrderConfirmationEmailDat
   });
 };
 
-// Send admin order notification
+
 export const sendAdminOrderNotification = async (data: AdminOrderNotificationData) => {
   const { orderNumber, name, email, items, totalAmount, transactionId } = data;
 

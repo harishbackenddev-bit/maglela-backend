@@ -40,7 +40,7 @@ describe("initiatePaymentService", () => {
     expect(r.paymentUrl).toContain("payfast.co.za");
     expect(r.orderNumber).toMatch(/^ORD-/);
     expect(r.transactionId).toMatch(/^PF-/);
-    // subtotal 200 + 15% = 230
+    
     expect(r.paymentData.amount).toBe("230.00");
     expect(r.paymentData.custom_str1).toBe(r.orderNumber);
     expect(r.paymentData.m_payment_id).toBe(r.transactionId);
@@ -62,9 +62,9 @@ describe("initiatePaymentService", () => {
   it("guests get the product-PDF mapping, 'Bearer' callers get the toolkit mapping", async () => {
     const save = stubSave();
     await initiatePaymentService(payload(), mockReq(), res);
-    expect((save.mock.instances[0] as any).items[0].fileUrl).toMatch(/^\/uploads\/pdfs\//);
+    expect((save.mock.instances[0] as any).items[0].fileUrl).toMatch(/^\/uploads\/pdfs\
     await initiatePaymentService(payload(), mockReq({ headers: { authorization: "Bearer abc" } }), res);
-    expect((save.mock.instances[1] as any).items[0].fileUrl).toMatch(/^\/uploads\/toolkits\//);
+    expect((save.mock.instances[1] as any).items[0].fileUrl).toMatch(/^\/uploads\/toolkits\
   });
 
   it("unknown products fall back to a default file name", async () => {
@@ -88,7 +88,7 @@ describe("initiatePaymentService", () => {
   it.fails("SECURITY: a bogus 'Bearer x' header must not be treated as an authenticated user", async () => {
     const save = stubSave();
     await initiatePaymentService(payload(), mockReq({ headers: { authorization: "Bearer not-a-real-jwt" } }), res);
-    expect((save.mock.instances[0] as any).items[0].fileUrl).toMatch(/^\/uploads\/pdfs\//);
+    expect((save.mock.instances[0] as any).items[0].fileUrl).toMatch(/^\/uploads\/pdfs\
   });
 });
 
@@ -159,7 +159,7 @@ describe("handlePayfastNotificationService", () => {
     expect(await handlePayfastNotificationService(itn(), res)).toEqual({ success: false, message: "db" });
   });
 
-  // ---- SECURITY: none of these protections exist today (validateITN / generateITNSignature are never called) ----
+  
   it.fails("SECURITY: rejects a COMPLETE notification with a missing/forged signature", async () => {
     vi.spyOn(orderModel, "findOne").mockResolvedValue(order() as any);
     const upd = vi.spyOn(orderModel, "findByIdAndUpdate").mockResolvedValue({} as any);

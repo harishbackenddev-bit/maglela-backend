@@ -1,4 +1,4 @@
-// models/orders/order-schema.ts
+
 import { Schema, model } from "mongoose";
 
 const OrderSchema = new Schema(
@@ -39,7 +39,7 @@ const OrderSchema = new Schema(
                 type: Number,
                 required: true
             },
-            // ✅ Add file fields for PDF mapping
+            
             fileUrl: {
                 type: String,
                 default: ''
@@ -122,7 +122,7 @@ const OrderSchema = new Schema(
                 type: String
             },
             fileName: {
-                type: String // ✅ Add fileName for download
+                type: String 
             },
             expiresAt: {
                 type: Date
@@ -134,7 +134,7 @@ const OrderSchema = new Schema(
     }
 );
 
-// Generate order number before saving
+
 OrderSchema.pre('save', function(next) {
     if (!this.orderNumber) {
         const timestamp = Date.now().toString(36);

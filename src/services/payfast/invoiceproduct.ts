@@ -1,4 +1,4 @@
-// services/payfast/invoiceproduct.ts
+
 import { Request, Response } from "express";
 import {
     generateOrderNumber,
@@ -10,9 +10,9 @@ import { INVOICE_PAYFAST_CONFIG } from "../../config/payfast.config";
 import { usersModel } from "../../models/user/user-schema";
 import { InvoiceModel } from "../../models/invoice/invoice-schema";
 
-// ============================================
-// 1. INITIATE INVOICE PAYMENT SERVICE
-// ============================================
+
+
+
 export const initiateCreditPaymentService = async (payload: any, req: Request, res: Response) => {
     try {
         const {
@@ -25,7 +25,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             description
         } = payload;
 
-        // ✅ Validate required fields
+        
         if (!userEmail || !billingInfo || !invoiceId) {
             return {
                 success: false,
@@ -33,7 +33,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Validate billing info fields
+        
         if (!billingInfo.firstName || !billingInfo.lastName || !billingInfo.email) {
             return {
                 success: false,
@@ -41,7 +41,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Validate amount
+        
         if (!amount || amount <= 0) {
             return {
                 success: false,
@@ -49,7 +49,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Find user
+        
         const user = await usersModel.findOne({ email: userEmail });
         if (!user) {
             return {
@@ -58,8 +58,8 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Verify invoice exists and is pending
-        // Using clientInfo.email since invoice schema doesn't have direct userEmail field
+        
+        
         const invoice = await InvoiceModel.findOne({
             _id: invoiceId,
             'clientInfo.email': userEmail,
@@ -73,24 +73,24 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             };
         }
 
-        // ✅ Generate order details
+        
         const orderNumber = generateOrderNumber();
         const transactionId = generateTransactionId();
 
-        // ✅ Create order in database
+        
         const order = new invoiceOrderModel({
             orderNumber: orderNumber,
             userEmail: userEmail,
             userId: user._id,
             orderType: 'invoice',
 
-            // Invoice Details
+            
             invoiceId: invoiceId,
             invoiceNumber: invoiceNumber || invoice.invoiceNumber,
             invoiceAmount: amount,
             description: description || invoice.additionalNotes || 'Invoice Payment',
 
-            // Payment Details
+            
             subtotal: invoice.subtotal || amount,
             taxAmount: invoice.taxTotal || 0,
             discountAmount: invoice.discountTotal || 0,
@@ -100,7 +100,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
             paymentMethod: 'payfast',
             transactionId: transactionId,
 
-            // Billing Info
+            
             billingInfo: {
                 firstName: billingInfo.firstName,
                 lastName: billingInfo.lastName,
@@ -115,26 +115,26 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
                 taxNumber: billingInfo.taxNumber || "",
             },
 
-            // Invoice Items
+            
             items: items || invoice.items || [],
 
-            // User Info Snapshot
+            
             user: {
                 name: `${billingInfo.firstName} ${billingInfo.lastName}`,
                 email: billingInfo.email,
             },
 
-            // Status History
+            
             statusHistory: [{
                 status: 'pending',
                 timestamp: new Date(),
                 note: 'Invoice order created - awaiting payment',
             }],
 
-            // PayFast Response (initially empty)
+            
             payfast: {},
 
-            // Timestamps
+            
             paidAt: null,
             cancelledAt: null,
             refundedAt: null,
@@ -142,7 +142,7 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
 
         await order.save();
 
-        // ✅ Prepare PayFast payment data
+        
         const paymentData = preparePayFastDataInvoice({
             amount: amount,
             email: billingInfo.email,
@@ -188,9 +188,9 @@ export const initiateCreditPaymentService = async (payload: any, req: Request, r
     }
 };
 
-// ============================================
-// 2. HANDLE INVOICE PAYMENT NOTIFICATION SERVICE
-// ============================================
+
+
+
 export const handleCreditPaymentNotificationService = async (payload: any, res: Response) => {
     try {
         const data = payload;
@@ -201,7 +201,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
         const pfPaymentId = data.pf_payment_id;
         const orderNumber = data.custom_str1 || "";
 
-        // ✅ Find order
+        
         let order = await invoiceOrderModel.findOne({
             $or: [
                 { transactionId: transactionId },
@@ -217,10 +217,10 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
             };
         }
 
-        // ✅ Handle COMPLETE payment
+        
         if (paymentStatus === "COMPLETE") {
             try {
-                // ✅ 1. Update order status
+                
                 const updatedOrder = await invoiceOrderModel.findByIdAndUpdate(
                     order._id,
                     {
@@ -243,15 +243,15 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
 
                 console.log(`✅ Invoice payment completed for order: ${order.orderNumber}`);
 
-                // ✅ 2. UPDATE INVOICE STATUS TO PAID
+                
                 const invoice = await InvoiceModel.findById(order.invoiceId);
 
                 if (invoice) {
-                    // Use the instance method markAsPaid if available
+                    
                     if (typeof invoice.markAsPaid === 'function') {
                         await invoice.markAsPaid();
                     } else {
-                        // Fallback to direct update
+                        
                         await InvoiceModel.findByIdAndUpdate(
                             invoice._id,
                             {
@@ -266,7 +266,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
                     console.warn(`⚠️ Invoice not found: ${order.invoiceId}`);
                 }
 
-                // ✅ 3. Update user's order history (optional)
+                
                 const user = await usersModel.findOne({ email: order.userEmail });
 
                 if (user) {
@@ -301,7 +301,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
             } catch (error: any) {
                 console.error('❌ Error processing invoice payment:', error);
 
-                // ✅ Mark order as failed
+                
                 await invoiceOrderModel.findByIdAndUpdate(
                     order._id,
                     {
@@ -325,7 +325,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
             }
         }
 
-        // ✅ Handle PENDING payment
+        
         if (paymentStatus === "PENDING") {
             await invoiceOrderModel.findByIdAndUpdate(
                 order._id,
@@ -351,7 +351,7 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
             };
         }
 
-        // ✅ Handle FAILED or CANCELLED payment
+        
         if (paymentStatus === "FAILED" || paymentStatus === "CANCELLED") {
             await invoiceOrderModel.findByIdAndUpdate(
                 order._id,
@@ -391,9 +391,9 @@ export const handleCreditPaymentNotificationService = async (payload: any, res: 
     }
 };
 
-// ============================================
-// 3. GET INVOICE ORDER STATUS SERVICE
-// ============================================
+
+
+
 export const getCreditOrderStatusService = async (
   orderId: string,
   body: any,
@@ -437,9 +437,9 @@ export const getCreditOrderStatusService = async (
     }
 };
 
-// ============================================
-// 4. GET INVOICE ORDER SERVICE
-// ============================================
+
+
+
 export const getCreditOrderService = async (
     id: string,
     body: any,
@@ -472,9 +472,9 @@ export const getCreditOrderService = async (
     }
 };
 
-// ============================================
-// 5. GET USER INVOICE ORDERS SERVICE
-// ============================================
+
+
+
 export const getUserCreditOrdersService = async (email: string) => {
     try {
         if (!email) {
@@ -489,7 +489,7 @@ export const getUserCreditOrdersService = async (email: string) => {
             userEmail: email,
         }).sort({ createdAt: -1 });
 
-        // Format orders for response
+        
         const formattedOrders = orders.map(order => ({
             orderNumber: order.orderNumber,
             transactionId: order.transactionId,

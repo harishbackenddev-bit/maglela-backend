@@ -14,8 +14,8 @@ import { z } from "zod"
 import mongoose from "mongoose"
 
 export const signup = async (req: Request, res: Response) => {
-    // const validation = clientSignupSchema.safeParse(req.body)
-    // if (!validation.success) return res.status(httpStatusCode.BAD_REQUEST).json({ success: false, message: formatZodErrors(validation.error) })
+    
+    
     try {
         const response: any = await signupService(req.body, res)
         return res.status(httpStatusCode.CREATED).json(response)
@@ -38,8 +38,8 @@ export const userdata = async (req: Request, res: Response) => {
 }
 
 export const login = async (req: Request, res: Response) => {
-    // const validation = adminUserLoginSchema.safeParse(req.body)
-    // if (!validation.success) return res.status(httpStatusCode.BAD_REQUEST).json({ success: false, message: formatZodErrors(validation.error) })
+    
+    
     try {
         const response = await loginService(req.body, res)
         return res.status(httpStatusCode.OK).json(response)
@@ -51,9 +51,9 @@ export const login = async (req: Request, res: Response) => {
 }
 
 export const forgotPassword = async (req: Request, res: Response) => {
-    // const { email } = req.body
-    // const validation = z.string().email().safeParse(email)
-    // if (!validation.success) return res.status(httpStatusCode.BAD_REQUEST).json({ success: false, message: formatZodErrors(validation.error) })
+    
+    
+    
     try {
         const response = await forgotPasswordService(req.body, res)
         return res.status(httpStatusCode.OK).json(response)
@@ -164,7 +164,7 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
 
 export const profileupdate = async (req: Request, res: Response) => {
     try {
-        // Check if file was uploaded
+        
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -172,12 +172,12 @@ export const profileupdate = async (req: Request, res: Response) => {
             });
         }
 
-        // Cloudinary automatically uploads the file and provides the URL
-        // The file object will have Cloudinary-specific properties
-        const imageUrl = (req.file as any).path; // Cloudinary URL
-        const publicId = (req.file as any).filename; // Cloudinary public_id
+        
+        
+        const imageUrl = (req.file as any).path; 
+        const publicId = (req.file as any).filename; 
 
-        // Return the Cloudinary URL
+        
         res.status(200).json({
             success: true,
             message: 'Profile image uploaded successfully',
@@ -276,7 +276,7 @@ export const documentUpload = async (req: Request, res: Response) => {
 
 
 
-// Dashboard
+
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
         const response = await getDashboardStatsService(req, res)
@@ -287,7 +287,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     }
 }
 
-// getAIwritingData
+
 export const getAIwritingData = async (req: Request, res: Response) => {
     try {
         const response = await getAIwritingDataService(req, res)
@@ -342,9 +342,9 @@ export const createSupportMessage = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// GET SINGLE QUOTE
-// ============================================
+
+
+
 
 
 export const getQuote = async (req: Request, res: Response) => {
@@ -358,9 +358,9 @@ export const getQuote = async (req: Request, res: Response) => {
     }
 };
 
-// ============================================
-// UPDATE QUOTE
-// ============================================
+
+
+
 export const updateQuote = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;

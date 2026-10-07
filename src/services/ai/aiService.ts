@@ -1,4 +1,4 @@
-// services/ai/aiService.ts
+
 import { Response } from "express";
 import { errorResponseHandler } from "../../lib/errors/error-response-handler";
 import { httpStatusCode } from "../../lib/constant";
@@ -7,7 +7,7 @@ import { aiGenerateService as aiGenerateCore } from "./aiGenerateService";
 import { aiContentModel } from "../../models/aiContentModel/aiContentModel";
 import { usersModel } from "../../models/user/user-schema";
 
-// Main AI Generation Service
+
 export const aiGenerateService = async (payload: any, res: Response) => {
     try {
         const { title, type, tone, includeOutline, userId, file } = payload;
@@ -22,7 +22,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             fileSize: payload.file?.size
         });
 
-        // Validate
+        
         if (!title) {
             console.log("❌ Validation failed: Title is required");
             return errorResponseHandler("Title is required", httpStatusCode.BAD_REQUEST, res);
@@ -38,7 +38,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
 
         console.log("✅ Validation passed");
 
-        // ✅ GET USER AND CHECK CREDITS
+        
         console.log(`🔍 Fetching user with ID: ${userId}`);
         const user = await usersModel.findById(userId);
         if (!user) {
@@ -46,12 +46,12 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             return errorResponseHandler("User not found", httpStatusCode.NOT_FOUND, res);
         }
 
-        // Get current credits
+        
         let currentCredits = user.credits || 0;
         console.log(`👤 User found: ${user.email}`);
         console.log(`💰 Current credits: ${currentCredits}`);
 
-        // ✅ CHECK IF USER HAS ENOUGH CREDITS (MINIMUM 1 CREDIT)
+        
         if (currentCredits < 1) {
             console.log(`❌ Insufficient credits: ${currentCredits} < 1`);
             return errorResponseHandler(
@@ -61,7 +61,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             );
         }
 
-        // Extract text from file
+        
         console.log("📄 Extracting text from file:", file.originalname);
         const fileContent = await extractTextFromFile(file);
         if (!fileContent || fileContent.length < 50) {
@@ -74,7 +74,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
         }
         console.log(`✅ File content extracted: ${fileContent.length} characters, ${fileContent.split(/\s+/).length} words`);
 
-        // Generate document FIRST to get the cost
+        
         console.log("🤖 Generating document with AI...");
         console.log("📝 Generation params:", {
             title,
@@ -104,23 +104,23 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             tokensUsed: result.tokensUsed
         });
 
-        // ============================================
-        // ✅ CREDIT DEDUCTION LOGIC - ALWAYS DEDUCT
-        // ============================================
         
-        // ✅ Get ZAR cost from AI response
+        
+        
+        
+        
         const zarCost = result.costEstimate?.zar || 0;
         
-        // ✅ Calculate credits to deduct (zarCost * 5)
+        
         let creditsToDeduct = zarCost * 5;
         
-        // ✅ Force minimum deduction of 1 credit
+        
         if (creditsToDeduct < 1 && result.content && result.content.length > 0) {
             creditsToDeduct = 1;
             console.log(`💰 Minimum credit deduction applied: 1 credit (zarCost was ${zarCost})`);
         }
 
-        // ✅ Round to 2 decimal places
+        
         const roundedCredits = Math.round(creditsToDeduct * 100) / 100;
 
         console.log("💰 Credit calculation:");
@@ -129,7 +129,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
         console.log(`   - Credits to deduct: ${zarCost} × 5 = ${creditsToDeduct}`);
         console.log(`   - Rounded credits: ${roundedCredits}`);
 
-        // ✅ CHECK IF USER HAS ENOUGH CREDITS AFTER CALCULATION
+        
         if (currentCredits < roundedCredits) {
             console.log(`❌ Insufficient credits: ${currentCredits} < ${roundedCredits}`);
             return errorResponseHandler(
@@ -139,7 +139,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             );
         }
 
-        // ✅ DEDUCT CREDITS AFTER SUCCESSFUL GENERATION
+        
         let newCredits = currentCredits - roundedCredits;
         console.log(`💳 Credits before deduction: ${currentCredits}`);
         console.log(`💳 Credits after deduction: ${newCredits}`);
@@ -194,7 +194,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             console.log("⚠️ Generation succeeded but credit deduction failed!");
         }
 
-        // ✅ Save generated content with cost and credit info
+        
         try {
             console.log("💾 Saving generated content to database...");
             const newContent = new aiContentModel({
@@ -240,7 +240,7 @@ export const aiGenerateService = async (payload: any, res: Response) => {
             console.error("❌ Database save error:", dbError);
         }
 
-        // ✅ Return success with credit info
+        
         console.log("🎉 AI Generation completed successfully!");
         console.log("📊 Final summary:", {
             documentTitle: title,
@@ -282,11 +282,11 @@ export const aiGenerateService = async (payload: any, res: Response) => {
     }
 };
 
-// ============================================
-// ADDITIONAL SERVICES
-// ============================================
 
-// Cost Estimates Service
+
+
+
+
 export const getCostEstimatesService = async (params: any, res: Response) => {
     try {
         const { users, draftsPerUser } = params;
@@ -346,7 +346,7 @@ export const getCostEstimatesService = async (params: any, res: Response) => {
     }
 };
 
-// AI Cost Estimates Service
+
 export const getAICostEstimatesService = async (params: any, res: Response) => {
     try {
         const exchangeRate = 16.6;
@@ -406,7 +406,7 @@ export const getAICostEstimatesService = async (params: any, res: Response) => {
     }
 };
 
-// Claude Service
+
 export const generateWithClaudeService = async (payload: any, res: Response) => {
     try {
         const { content, title, type, tone } = payload;
@@ -427,7 +427,7 @@ export const generateWithClaudeService = async (payload: any, res: Response) => 
     }
 };
 
-// OpenAI Service
+
 export const generateWithOpenAIService = async (payload: any, res: Response) => {
     try {
         const { content, title, type, tone } = payload;

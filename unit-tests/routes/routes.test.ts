@@ -37,17 +37,12 @@ describe("route tables", () => {
   });
 });
 
-/**
- * AUTH COVERAGE
- * Every route must run `checkAuth`, except the ones intentionally public below.
- * KNOWN_GAPS lists routes that look sensitive but have NO checkAuth today. They are marked it.fails:
- * the suite stays green now and goes RED as soon as you add auth - then delete the entry.
- */
+
 const INTENTIONALLY_PUBLIC: Record<string, string[]> = {
-  admin: ["GET /experts", "POST /experts", "GET /plans", "POST /plans", "GET /subscription-plans", "POST /subscription-plans"], // chained .route(): checkAuth is on the 2nd handler
+  admin: ["GET /experts", "POST /experts", "GET /plans", "POST /plans", "GET /subscription-plans", "POST /subscription-plans"], 
   user: ["POST /register", "POST /login", "PATCH /forgot-password", "GET /credit-plans",
-    "POST /payfast/notify", "POST /credit/payfast/notify", "POST /invoice/payfast/notify", // PayFast webhooks must be public
-    "POST /create-order", "GET /payments/status/:orderId", "GET /orders/:orderId", "GET /download/:orderNumber/:productId", // guest checkout flow (confirm intended)
+    "POST /payfast/notify", "POST /credit/payfast/notify", "POST /invoice/payfast/notify", 
+    "POST /create-order", "GET /payments/status/:orderId", "GET /orders/:orderId", "GET /download/:orderNumber/:productId", 
     "GET /credit/payments/status/:orderId", "GET /credit/orders/:orderId", "GET /invoices/orders/:orderId"],
   ai: [],
 };
@@ -72,8 +67,8 @@ describe("auth coverage", () => {
 });
 
 describe("admin role enforcement", () => {
-  // /api/admin only checks that you are logged in; any user's JWT can call admin endpoints.
-  // app.ts has `checkValidAdminRole` commented out. Marked it.fails until a role check exists.
+  
+  
   it.fails("admin router uses an admin-role check on its routes", () => {
     const names = list(admin).flatMap((r) => r.handlers);
     expect(names.some((n) => /admin.?role/i.test(n))).toBe(true);
@@ -90,7 +85,7 @@ describe("HTTP behaviour (no token => 401, handler never reached)", () => {
   const protectedRoutes: [string, R][] = [];
   for (const [name, router] of Object.entries(routers)) {
     for (const r of list(router)) {
-      // first handler must be checkAuth, otherwise another handler could run before it
+      
       if (r.handlers[0] === "checkAuth" || (r.handlers.includes("checkAuth") && !["getExperts", "getPlans", "getSubscriptionPlans", "getAllClient", "getworkshop"].includes(r.handlers[0]) && r.handlers[0] === "checkAuth"))
         protectedRoutes.push([name, r]);
     }

@@ -1,9 +1,9 @@
-// utils/fileProcessor.ts
+
 import fs from "fs";
 import mammoth from "mammoth";
 import { promisify } from "util";
 import { exec } from "child_process";
-import { PDFParse } from 'pdf-parse'; // ✅ Correct import for v2
+import { PDFParse } from 'pdf-parse'; 
 
 const execAsync = promisify(exec);
 
@@ -18,10 +18,10 @@ export const extractTextFromFile = async (file: any): Promise<string> => {
         switch (extension) {
             case "pdf": {
                 const dataBuffer = fs.readFileSync(filePath);
-                // ✅ v2 usage: Create PDFParse instance with data
+                
                 const parser = new PDFParse({ data: dataBuffer });
                 const result = await parser.getText();
-                await parser.destroy(); // ✅ Always destroy to free memory
+                await parser.destroy(); 
                 text = result.text;
                 break;
             }

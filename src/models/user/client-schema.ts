@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 const clientSchema = new Schema(
   {
-    // Basic Information
+    
     name: {
       type: String,
       required: true,
@@ -17,7 +17,7 @@ const clientSchema = new Schema(
       trim: true,
     },
 
-    // Account Type (Fixed for clients)
+    
     accountType: {
       type: String,
       enum: ['institutional'],
@@ -30,15 +30,15 @@ const clientSchema = new Schema(
       default: 'enterprise',
     },
 
-    // Status
+    
     isActive: {
       type: Boolean,
       default: true,
     },
 
-    // ============================================
-    // ✅ CLIENT FIELDS (From API)
-    // ============================================
+    
+    
+    
 
     projects: {
       type: Number,
@@ -64,7 +64,7 @@ const clientSchema = new Schema(
       trim: true,
     },
 
-    // Relationships
+    
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'users',
@@ -84,9 +84,9 @@ const clientSchema = new Schema(
   }
 );
 
-// ============================================
-// ✅ VIRTUAL FIELDS
-// ============================================
+
+
+
 
 clientSchema.virtual('totalProjects').get(function() {
   return this.projects || 0;
@@ -96,9 +96,9 @@ clientSchema.virtual('totalLifetimeValue').get(function() {
   return this.lifetimeValue || 0;
 });
 
-// ============================================
-// ✅ STATIC METHODS
-// ============================================
+
+
+
 
 clientSchema.statics.findActiveClients = function() {
   return this.find({ isActive: true });
@@ -112,9 +112,9 @@ clientSchema.statics.findByCreator = function(creatorId) {
   return this.find({ createdBy: creatorId });
 };
 
-// ============================================
-// ✅ INSTANCE METHODS
-// ============================================
+
+
+
 
 clientSchema.methods.updateProjects = function(count) {
   this.projects = count;
@@ -131,9 +131,9 @@ clientSchema.methods.toggleStatus = function() {
   return this.save();
 };
 
-// ============================================
-// ✅ INDEXES
-// ============================================
+
+
+
 
 clientSchema.index({ email: 1 });
 clientSchema.index({ createdBy: 1 });
@@ -141,8 +141,8 @@ clientSchema.index({ managedBy: 1 });
 clientSchema.index({ isActive: 1 });
 clientSchema.index({ retainerType: 1 });
 
-// ============================================
-// ✅ MODEL
-// ============================================
+
+
+
 
 export const clientsModel = model("clients", clientSchema);
